@@ -1,0 +1,288 @@
+import Link from "next/link";
+import { Sparkles, Heart, Eye, Trophy, ArrowRight } from "lucide-react";
+import { Nav } from "@/components/Nav";
+import { PoiCard } from "@/components/PoiCard";
+import { pois, itineraries, topContributors, getPoi } from "@/lib/mock-data";
+
+export default function Home() {
+  const featuredPois = pois.slice(0, 6);
+  const featuredItineraries = itineraries.slice(0, 3);
+
+  return (
+    <>
+      <Nav />
+
+      {/* Hero */}
+      <section className="relative overflow-hidden border-b border-stone-200 bg-gradient-to-b from-orange-50 via-stone-50 to-stone-50">
+        <div className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6 sm:py-24">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-orange-200 bg-white px-3 py-1 text-xs font-medium text-orange-700">
+            <Sparkles size={12} /> 雙薪父母專用 ・ 完全免費
+          </span>
+          <h1 className="mt-6 text-4xl font-extrabold leading-tight tracking-tight text-stone-900 sm:text-6xl">
+            親子週末，<br className="sm:hidden" />
+            <span className="text-orange-600">30 秒</span>規劃完成。
+          </h1>
+          <p className="mt-5 text-base text-stone-600 sm:text-lg">
+            告訴 AI 小孩幾歲、想戶外還是室內、預算多少 ...
+            <br className="hidden sm:block" />
+            幫你排好完整一日遊：早餐 → 景點 → 點心 → 景點 → 晚餐。
+          </p>
+
+          {/* CTA */}
+          <div className="mx-auto mt-8 max-w-2xl">
+            <Link
+              href="/chat"
+              className="group flex items-center gap-3 rounded-2xl border border-stone-300 bg-white p-4 text-left shadow-sm transition hover:border-orange-400 hover:shadow-md"
+            >
+              <Sparkles className="shrink-0 text-orange-500" size={22} />
+              <span className="flex-1 text-stone-500">
+                試試：「6 歲男生 想戶外 預算 3000 不過夜」
+              </span>
+              <span className="hidden shrink-0 items-center gap-1 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition group-hover:bg-orange-600 sm:flex">
+                開始規劃 <ArrowRight size={16} />
+              </span>
+              <span className="flex shrink-0 sm:hidden">
+                <ArrowRight size={20} className="text-orange-500" />
+              </span>
+            </Link>
+            <p className="mt-3 text-xs text-stone-500">
+              全台北 200+ 親子場館．AI 不會給你不存在的景點．30 秒完成
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Itineraries */}
+      <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
+        <div className="mb-6 flex items-end justify-between">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+              本週熱門行程
+            </h2>
+            <p className="mt-1 text-sm text-stone-600">
+              其他爸媽公開的行程，可一鍵複製成你的
+            </p>
+          </div>
+          <Link
+            href="/discover"
+            className="hidden text-sm font-medium text-orange-600 hover:text-orange-700 sm:inline"
+          >
+            看全部 →
+          </Link>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {featuredItineraries.map((it) => {
+            const itPois = it.poiIds
+              .map((id) => getPoi(id))
+              .filter((p): p is NonNullable<typeof p> => Boolean(p));
+            return (
+              <Link
+                key={it.id}
+                href={`/itinerary/${it.id}`}
+                className="group flex flex-col gap-3 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              >
+                <div className="flex items-center gap-2 text-xs text-stone-500">
+                  <span className="rounded-full bg-stone-100 px-2 py-0.5">
+                    {it.authorName}
+                  </span>
+                  <span>·</span>
+                  <span>{it.createdAt}</span>
+                </div>
+                <h3 className="text-lg font-semibold leading-snug group-hover:text-orange-600">
+                  {it.title}
+                </h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {it.tags.map((t) => (
+                    <span
+                      key={t}
+                      className="rounded-md bg-stone-100 px-1.5 py-0.5 text-[11px] text-stone-600"
+                    >
+                      #{t}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  {itPois.slice(0, 3).map((p) => (
+                    <div
+                      key={p.id}
+                      className="flex items-center gap-2 truncate rounded-lg bg-stone-50 px-2.5 py-1.5 text-xs text-stone-700"
+                    >
+                      <span className="text-base leading-none">
+                        {categoryEmoji(p.category)}
+                      </span>
+                      <span className="truncate">{p.name}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-auto flex items-center justify-between border-t border-stone-100 pt-3 text-xs text-stone-500">
+                  <span className="font-semibold text-stone-900">
+                    {it.estimatedCost === 0
+                      ? "免費"
+                      : `預估 NT$${it.estimatedCost.toLocaleString()}`}
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex items-center gap-1">
+                      <Heart size={12} className="fill-rose-400 text-rose-400" />
+                      {it.likes}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <Eye size={12} /> {it.views.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Featured POIs */}
+      <section className="border-t border-stone-200 bg-white">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
+          <div className="mb-6 flex items-end justify-between">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                新加入的親子景點
+              </h2>
+              <p className="mt-1 text-sm text-stone-600">
+                由爸媽親自走過、推薦給你
+              </p>
+            </div>
+            <Link
+              href="/poi"
+              className="hidden text-sm font-medium text-orange-600 hover:text-orange-700 sm:inline"
+            >
+              看全部 200+ →
+            </Link>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {featuredPois.map((poi) => (
+              <PoiCard key={poi.id} poi={poi} />
+            ))}
+          </div>
+
+          <div className="mt-8 rounded-2xl border-2 border-dashed border-stone-300 bg-stone-50 p-6 text-center">
+            <p className="text-sm font-semibold text-stone-700">
+              知道一個還沒上的好地方？
+            </p>
+            <p className="mt-1 text-xs text-stone-500">
+              上傳並通過審核 +10 積分．每被按一個讚 +1 積分
+            </p>
+            <Link
+              href="/upload"
+              className="mt-3 inline-block rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-stone-50 hover:bg-stone-700"
+            >
+              + 推薦一個景點
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Top contributors */}
+      <section className="border-t border-stone-200">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
+          <div className="grid gap-8 lg:grid-cols-2">
+            <div>
+              <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-3xl">
+                <Trophy className="text-amber-500" size={28} />
+                本月貢獻王
+              </h2>
+              <p className="mt-1 text-sm text-stone-600">
+                上傳景點、被按讚都會累積積分。訂閱版上線後可折抵費用。
+              </p>
+              <ul className="mt-5 divide-y divide-stone-200 rounded-xl border border-stone-200 bg-white">
+                {topContributors.map((c, i) => (
+                  <li key={c.name} className="flex items-center gap-3 px-4 py-3">
+                    <span className="w-6 text-center text-sm font-bold text-stone-400">
+                      {i + 1}
+                    </span>
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-orange-200 to-amber-300 text-base">
+                      {c.badge || c.name.charAt(0)}
+                    </span>
+                    <span className="flex-1 font-medium text-stone-800">
+                      {c.name}
+                    </span>
+                    <span className="text-sm font-semibold text-orange-600">
+                      {c.points.toLocaleString()} 點
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="rounded-2xl border border-stone-200 bg-gradient-to-br from-amber-50 to-orange-50 p-6 sm:p-8">
+              <h3 className="text-lg font-bold">如何賺積分？</h3>
+              <ul className="mt-4 space-y-3 text-sm text-stone-700">
+                <li className="flex items-start gap-3">
+                  <span className="mt-0.5 inline-block min-w-[60px] rounded-md bg-emerald-100 px-2 py-0.5 text-center text-xs font-bold text-emerald-700">
+                    +10
+                  </span>
+                  <span>推薦的景點通過審核</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-0.5 inline-block min-w-[60px] rounded-md bg-emerald-100 px-2 py-0.5 text-center text-xs font-bold text-emerald-700">
+                    +5
+                  </span>
+                  <span>分享的行程被別人收藏</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-0.5 inline-block min-w-[60px] rounded-md bg-emerald-100 px-2 py-0.5 text-center text-xs font-bold text-emerald-700">
+                    +1
+                  </span>
+                  <span>你貢獻的內容被按一個讚</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-0.5 inline-block min-w-[60px] rounded-md bg-emerald-100 px-2 py-0.5 text-center text-xs font-bold text-emerald-700">
+                    +20
+                  </span>
+                  <span>邀請朋友註冊成功</span>
+                </li>
+              </ul>
+              <div className="mt-6 rounded-xl border border-amber-200 bg-white/70 p-3 text-xs leading-relaxed text-stone-600">
+                <strong className="text-stone-900">即將推出：</strong>
+                訂閱版上線後，100 點 = NT$10 折抵。
+                <br />
+                v1 期間每一點都會幫你存著。
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="mt-auto border-t border-stone-200 bg-white">
+        <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+          <div className="flex flex-col items-center justify-between gap-4 text-xs text-stone-500 sm:flex-row">
+            <div className="flex items-center gap-2">
+              <span className="text-base">🧒</span>
+              <span className="font-bold text-stone-700">ChildTrip</span>
+              <span>·</span>
+              <span>v0.1 — 內測中</span>
+            </div>
+            <div className="flex gap-4">
+              <Link href="/privacy" className="hover:text-stone-900">隱私政策</Link>
+              <Link href="/terms" className="hover:text-stone-900">服務條款</Link>
+              <Link href="/feedback" className="hover:text-stone-900">給我們建議</Link>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </>
+  );
+}
+
+function categoryEmoji(c: string): string {
+  const map: Record<string, string> = {
+    park: "🌳",
+    museum: "🏛️",
+    restaurant: "🍽️",
+    zoo: "🦁",
+    amusement: "🎡",
+    indoor: "🎨",
+  };
+  return map[c] ?? "📍";
+}
