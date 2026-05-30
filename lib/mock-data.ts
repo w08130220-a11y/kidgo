@@ -1,4 +1,5 @@
 import { seedPois } from "./seed-pois";
+import { tdxPois } from "./tdx-pois";
 
 export type PoiCategory =
   | "park"
@@ -272,8 +273,10 @@ const handCurated: Poi[] = [
   },
 ];
 
-// 合併 12 個 hand-curated + 60+ seed 全台景點 = 70+ POIs
-export const pois: Poi[] = [...handCurated, ...seedPois];
+// 合併 12 hand + 60+ seed + 2500+ TDX = 2500+ POIs 全台覆蓋
+// 注意: 此模組會被 chat client component import → bundle 略大 (~2.5MB)
+//   v1.5 refactor: 改成 server-side query Supabase, client 只拿 visible POIs
+export const pois: Poi[] = [...handCurated, ...seedPois, ...tdxPois];
 
 export type Itinerary = {
   id: string;

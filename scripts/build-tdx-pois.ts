@@ -35,12 +35,11 @@ function main() {
   const enriched: EnrichedPoi[] = JSON.parse(fs.readFileSync(INPUT_PATH, "utf-8"));
   console.log(`📂 載入 ${enriched.length.toLocaleString()} 筆 enriched POI`);
 
-  // 過濾
+  // 過濾: 只要 name + kidScore 夠 + 有 city/address 其一 (district/lat/lng 可缺)
   const filtered = enriched.filter((p) => {
     if (p.kidScore < 5) return false;
-    if (!p.lat || !p.lng) return false;
-    if (!p.address || !p.district) return false;
     if (!p.name) return false;
+    if (!p.city && !p.address) return false;
     return true;
   });
 
@@ -75,11 +74,13 @@ export const tdxPois: Poi[] = [
       const photosLine = p.photos.length > 0
         ? `\n    photos: ${JSON.stringify(p.photos)},`
         : "";
+      const district = p.district || p.city || "未分類";
+      const address = p.address || `${p.city ?? ""}${p.district ?? ""}`.trim() || null;
       return `  {
     id: ${JSON.stringify(p.id)},
     name: ${JSON.stringify(p.name)},
     category: ${JSON.stringify(p.category)},
-    district: ${JSON.stringify(p.district)},
+    district: ${JSON.stringify(district)},
     ageMin: ${p.ageMin},
     ageMax: ${p.ageMax},
     durationMin: ${p.durationMin},
@@ -91,7 +92,7 @@ export const tdxPois: Poi[] = [
     contributorName: "TDX",
     estimatedKid: ${JSON.stringify(p.aiReasoning)},${p.phone ? `\n    phone: ${JSON.stringify(p.phone)},` : ""}
     requiresReservation: ${p.category === "restaurant" && !isFree},
-    address: ${JSON.stringify(p.address)},${photosLine}
+    address: ${address ? JSON.stringify(address) : "undefined"},${photosLine}
   },`;
     })
     .join("\n");
