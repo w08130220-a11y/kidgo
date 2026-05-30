@@ -295,6 +295,10 @@ function LoginPromptModal({
   action: "save" | "share" | "calendar";
   onClose: () => void;
 }) {
+  const [magicEmail, setMagicEmail] = useState("");
+  const [magicState, setMagicState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [magicMsg, setMagicMsg] = useState("");
+
   const titleMap = {
     save: "儲存行程需要登入",
     share: "分享行程需要登入",
@@ -305,6 +309,47 @@ function LoginPromptModal({
     share: "登入後分享行程會帶上你的暱稱，其他爸媽看到還能追蹤你。",
     calendar: "登入讓我們知道是誰的行程。",
   };
+
+  const handleGoogle = async () => {
+    const { createClient } = await import("@/lib/supabase/client");
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(window.location.pathname)}`,
+      },
+    });
+    if (error) {
+      setMagicState("error");
+      setMagicMsg(`Google 登入失敗: ${error.message}`);
+    }
+  };
+
+  const handleMagicLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!magicEmail.includes("@")) {
+      setMagicState("error");
+      setMagicMsg("請填有效 email");
+      return;
+    }
+    setMagicState("sending");
+    const { createClient } = await import("@/lib/supabase/client");
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithOtp({
+      email: magicEmail,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(window.location.pathname)}`,
+      },
+    });
+    if (error) {
+      setMagicState("error");
+      setMagicMsg(error.message);
+    } else {
+      setMagicState("sent");
+      setMagicMsg("登入連結已寄出，請去信箱點連結。");
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/50 backdrop-blur-sm p-4"
@@ -322,27 +367,61 @@ function LoginPromptModal({
 
         <div className="mt-6 space-y-2">
           <button
-            disabled
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white opacity-60 cursor-not-allowed"
-            title="LINE Login 即將上線"
+            onClick={handleGoogle}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm font-semibold text-stone-800 hover:bg-stone-50 transition"
           >
-            <span className="text-base">💬</span> 用 LINE 登入
-            <span className="text-[10px] font-normal rounded bg-emerald-700 px-1.5 py-0.5">即將上線</span>
+            <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+              <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+              <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
+              <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+              <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+            </svg>
+            用 Google 登入
           </button>
-          <button
-            disabled
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm font-semibold text-stone-800 opacity-60 cursor-not-allowed"
-            title="Google Login 即將上線"
-          >
-            <span className="text-base">🅖</span> 用 Google 登入
-            <span className="text-[10px] font-normal text-stone-500">即將上線</span>
-          </button>
+
+          <div className="my-3 flex items-center gap-2 text-[11px] text-stone-400">
+            <span className="h-px flex-1 bg-stone-200" />
+            或用 Email
+            <span className="h-px flex-1 bg-stone-200" />
+          </div>
+
+          <form onSubmit={handleMagicLink} className="space-y-2">
+            <input
+              type="email"
+              required
+              value={magicEmail}
+              onChange={(e) => setMagicEmail(e.target.value)}
+              placeholder="your@email.com"
+              disabled={magicState === "sending" || magicState === "sent"}
+              className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none focus:border-orange-400 disabled:bg-stone-50"
+            />
+            <button
+              type="submit"
+              disabled={magicState === "sending" || magicState === "sent"}
+              className={cx(
+                "flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition",
+                magicState === "sent"
+                  ? "bg-emerald-500 text-white"
+                  : "bg-orange-500 text-white hover:bg-orange-600",
+                magicState === "sending" && "opacity-60 cursor-wait"
+              )}
+            >
+              {magicState === "sending" ? "寄信中..." : magicState === "sent" ? "✓ 已寄出" : "寄送登入連結"}
+            </button>
+          </form>
         </div>
 
+        {magicMsg && (
+          <p className={cx(
+            "mt-3 rounded-lg px-3 py-2 text-xs",
+            magicState === "error" ? "bg-rose-50 text-rose-900" : "bg-emerald-50 text-emerald-900"
+          )}>
+            {magicMsg}
+          </p>
+        )}
+
         <p className="mt-4 text-center text-[11px] text-stone-500">
-          v1 內測階段登入功能尚未開放，正準備接 Supabase Auth。
-          <br />
-          現在你可以「加到行事曆」下載 .ics 檔離線儲存。
+          v1 內測階段, 加入 Google test users 才能登入。LINE 登入 v2 推出。
         </p>
 
         <button
