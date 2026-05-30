@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Heart, MapPin, Clock } from "lucide-react";
 import { type Poi, categoryMeta } from "@/lib/mock-data";
+import { PoiImage } from "./PoiImage";
 
 export function PoiCard({ poi, compact = false }: { poi: Poi; compact?: boolean }) {
   const meta = categoryMeta(poi.category);
@@ -14,19 +15,22 @@ export function PoiCard({ poi, compact = false }: { poi: Poi; compact?: boolean 
       href={`/poi/${poi.id}`}
       className="group relative flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
     >
-      <div
-        className={`relative flex aspect-[4/3] items-center justify-center bg-gradient-to-br ${meta.gradient} text-white`}
+      <PoiImage
+        photo={poi.photos?.[0]}
+        gradientClass={meta.gradient}
+        emoji={meta.emoji}
+        alt={poi.name}
+        aspect="aspect-[4/3]"
       >
-        <span className="text-6xl drop-shadow-md">{meta.emoji}</span>
-        <span className="absolute left-3 top-3 rounded-full bg-black/30 px-2 py-0.5 text-[11px] font-medium backdrop-blur">
+        <span className="absolute left-3 top-3 z-10 rounded-full bg-black/40 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur">
           {meta.label}
         </span>
         {poi.priceMin === 0 && poi.priceMax === 0 && (
-          <span className="absolute right-3 top-3 rounded-full bg-emerald-500 px-2 py-0.5 text-[11px] font-bold text-white">
+          <span className="absolute right-3 top-3 z-10 rounded-full bg-emerald-500 px-2 py-0.5 text-[11px] font-bold text-white">
             免費
           </span>
         )}
-      </div>
+      </PoiImage>
 
       <div className="flex flex-1 flex-col gap-2 p-4">
         <h3 className="line-clamp-1 text-base font-semibold leading-snug">

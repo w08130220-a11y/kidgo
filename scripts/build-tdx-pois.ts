@@ -72,6 +72,9 @@ export const tdxPois: Poi[] = [
       const isFree = p.priceMin === 0 && p.priceMax === 0;
       // 字數限制 description
       const desc = safe(p.description).slice(0, 200) || `位於${p.district}, 親子推薦.`;
+      const photosLine = p.photos.length > 0
+        ? `\n    photos: ${JSON.stringify(p.photos)},`
+        : "";
       return `  {
     id: ${JSON.stringify(p.id)},
     name: ${JSON.stringify(p.name)},
@@ -88,7 +91,7 @@ export const tdxPois: Poi[] = [
     contributorName: "TDX",
     estimatedKid: ${JSON.stringify(p.aiReasoning)},${p.phone ? `\n    phone: ${JSON.stringify(p.phone)},` : ""}
     requiresReservation: ${p.category === "restaurant" && !isFree},
-    address: ${JSON.stringify(p.address)},
+    address: ${JSON.stringify(p.address)},${photosLine}
   },`;
     })
     .join("\n");

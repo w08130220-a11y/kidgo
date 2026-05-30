@@ -26,6 +26,7 @@ export type Poi = {
   phone?: string;             // 電話（若需要預約）
   requiresReservation?: boolean; // 是否需要事先預約
   address?: string;           // 完整地址
+  photos?: string[];          // 圖片 URL (TDX 抓的或 UGC 上傳); 沒填則 fallback 到漸層+emoji
 };
 
 const cat = (c: PoiCategory) => {

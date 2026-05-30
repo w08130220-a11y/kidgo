@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Heart, MapPin, Clock, Wallet, Sparkles, Bookmark } from "lucide-react";
 import { Nav } from "@/components/Nav";
+import { PoiImage } from "@/components/PoiImage";
 import { getPoi, categoryMeta } from "@/lib/mock-data";
 
 export default async function PoiDetailPage({
@@ -27,19 +28,39 @@ export default async function PoiDetailPage({
           <ArrowLeft size={14} /> 回探索
         </Link>
 
-        <div
-          className={`relative flex aspect-[16/9] items-center justify-center overflow-hidden rounded-3xl bg-gradient-to-br ${meta.gradient} text-white shadow-lg`}
-        >
-          <span className="text-9xl drop-shadow-lg">{meta.emoji}</span>
-          <span className="absolute left-4 top-4 rounded-full bg-black/30 px-3 py-1 text-xs font-medium backdrop-blur">
-            {meta.label}
-          </span>
-          {isFree && (
-            <span className="absolute right-4 top-4 rounded-full bg-emerald-500 px-3 py-1 text-xs font-bold">
-              免費
+        <div className="overflow-hidden rounded-3xl shadow-lg">
+          <PoiImage
+            photo={poi.photos?.[0]}
+            gradientClass={meta.gradient}
+            emoji={meta.emoji}
+            alt={poi.name}
+            aspect="aspect-[16/9]"
+          >
+            <span className="absolute left-4 top-4 z-10 rounded-full bg-black/40 px-3 py-1 text-xs font-medium text-white backdrop-blur">
+              {meta.label}
             </span>
-          )}
+            {isFree && (
+              <span className="absolute right-4 top-4 z-10 rounded-full bg-emerald-500 px-3 py-1 text-xs font-bold text-white">
+                免費
+              </span>
+            )}
+          </PoiImage>
         </div>
+
+        {poi.photos && poi.photos.length > 1 && (
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {poi.photos.slice(1, 4).map((url, i) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={url}
+                src={url}
+                alt={`${poi.name} 照片 ${i + 2}`}
+                loading="lazy"
+                className="aspect-[4/3] w-full rounded-lg object-cover"
+              />
+            ))}
+          </div>
+        )}
 
         <div className="mt-6">
           <h1 className="text-3xl font-bold leading-tight sm:text-4xl">{poi.name}</h1>
