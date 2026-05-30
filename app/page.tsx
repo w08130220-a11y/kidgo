@@ -155,7 +155,7 @@ export default function Home() {
               href="/poi"
               className="hidden text-sm font-medium text-orange-600 hover:text-orange-700 sm:inline"
             >
-              看全部 200+ →
+              看全部 {pois.length.toLocaleString()}+ →
             </Link>
           </div>
 
