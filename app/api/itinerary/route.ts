@@ -240,10 +240,11 @@ export async function POST(req: Request) {
   const mealLabelMap: Record<string, string> = { brunch: "早午餐", snack: "下午點心", dinner: "晚餐" };
   const mealsStr = d.meals.length > 0 ? d.meals.map((m) => mealLabelMap[m] ?? m).join("、") : "都不用排";
   const dateStr = { today: "今天", tomorrow: "明天", this_weekend: "這週末", next_weekend: "下週末" }[d.date];
-  const budgetStr = {
+  const BUDGET_LABELS = {
     low: "<2,000", mid: "2,000-5,000", high: "5,000-10,000",
     premium: "10,000+", none: "沒上限",
-  }[d.budget as keyof typeof budgetStr] ?? d.budget;
+  } as const;
+  const budgetStr = BUDGET_LABELS[d.budget as keyof typeof BUDGET_LABELS] ?? d.budget;
 
   const systemPrompt = `你是台灣親子行程規劃師, 幫忙產出 3 個風格不同的一日/多日行程方案.
 
@@ -323,8 +324,7 @@ ${JSON.stringify(candidateJson, null, 1)}
         },
       ],
       messages,
-      // @ts-expect-error tool schema typed loose
-      tools: [itineraryTool],
+      tools: [itineraryTool as Anthropic.Tool],
       tool_choice: { type: "tool", name: "create_three_plans" },
     });
 

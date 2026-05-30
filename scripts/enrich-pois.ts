@@ -114,8 +114,7 @@ async function enrichOne(client: Anthropic, raw: TdxRawPoi): Promise<EnrichResul
       max_tokens: 500,
       system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: userPrompt }],
-      // @ts-expect-error tool schema typed loose
-      tools: [enrichTool],
+      tools: [enrichTool as Anthropic.Tool],
       tool_choice: { type: "tool", name: "classify_poi" },
     });
     const toolUse = resp.content.find((b) => b.type === "tool_use");
