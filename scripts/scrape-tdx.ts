@@ -46,7 +46,8 @@ async function getAccessToken(): Promise<string> {
 async function fetchCity(
   token: string,
   city: { code: string; name: string },
-  endpoint: "ScenicSpot" | "Restaurant"
+  endpoint: "ScenicSpot" | "Restaurant",
+  attempt = 1
 ): Promise<TdxRawPoi[]> {
   const url = `${API_BASE}/${endpoint}/${city.code}?%24top=2000&%24format=JSON`;
   const res = await fetch(url, {
@@ -55,6 +56,12 @@ async function fetchCity(
       "Accept-Encoding": "br",
     },
   });
+  if (res.status === 429 && attempt <= 3) {
+    const waitS = 30 * attempt;
+    console.warn(`  ⏳ ${city.name} ${endpoint}: 429 rate limited, wait ${waitS}s (attempt ${attempt}/3)...`);
+    await new Promise((r) => setTimeout(r, waitS * 1000));
+    return fetchCity(token, city, endpoint, attempt + 1);
+  }
   if (!res.ok) {
     console.warn(`  ⚠ ${city.name} ${endpoint}: ${res.status}`);
     return [];
@@ -79,38 +86,50 @@ async function main() {
     }
   }
 
-  if (fs.existsSync(OUTPUT_PATH) && !FORCE) {
-    const stats = fs.statSync(OUTPUT_PATH);
-    const ageHrs = (Date.now() - stats.mtimeMs) / (1000 * 60 * 60);
-    console.log(`✓ ${OUTPUT_PATH} 已存在 (${ageHrs.toFixed(1)} 小時前)`);
-    console.log("  加 --force 強制重抓");
-    return;
-  }
-
   fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true });
+
+  if (FORCE && fs.existsSync(OUTPUT_PATH)) {
+    fs.unlinkSync(OUTPUT_PATH);
+    console.log("✓ --force 模式: 已刪除舊資料");
+  }
 
   console.log("📡 取得 TDX access token...");
   const token = await getAccessToken();
 
-  console.log(`📥 從 ${TDX_CITIES.length} 縣市抓 ScenicSpot + Restaurant...\n`);
-  const all: TdxRawPoi[] = [];
-  let totalScenic = 0;
-  let totalRest = 0;
+  console.log(`📥 從 ${TDX_CITIES.length} 縣市抓 ScenicSpot + Restaurant (sequential + throttle)...\n`);
+
+  // Resume mode: read existing file, fetch only missing cities
+  let all: TdxRawPoi[] = [];
+  const doneCities = new Set<string>();
+  if (fs.existsSync(OUTPUT_PATH) && !FORCE) {
+    all = JSON.parse(fs.readFileSync(OUTPUT_PATH, "utf-8"));
+    all.forEach((p) => doneCities.add(p.City));
+    console.log(`✓ 已有 ${all.length} 筆 (${doneCities.size} 個縣市), resume mode 只抓缺的\n`);
+  }
+
+  let totalScenic = all.filter((p) => p._sourceType === "scenicSpot").length;
+  let totalRest = all.filter((p) => p._sourceType === "restaurant").length;
 
   for (const city of TDX_CITIES) {
-    const [scenic, rest] = await Promise.all([
-      fetchCity(token, city, "ScenicSpot"),
-      fetchCity(token, city, "Restaurant"),
-    ]);
+    if (doneCities.has(city.name)) {
+      console.log(`  ${city.name.padEnd(6)}  ✓ 已抓過, 跳過`);
+      continue;
+    }
+    // Sequential per endpoint (不要 parallel, 避免 burst)
+    const scenic = await fetchCity(token, city, "ScenicSpot");
+    await new Promise((r) => setTimeout(r, 1500));
+    const rest = await fetchCity(token, city, "Restaurant");
     totalScenic += scenic.length;
     totalRest += rest.length;
     all.push(...scenic, ...rest);
     console.log(`  ${city.name.padEnd(6)}  景點 ${String(scenic.length).padStart(4)}  餐廳 ${String(rest.length).padStart(4)}`);
-    // 禮貌一下, 避免 burst
-    await new Promise((r) => setTimeout(r, 200));
-  }
 
-  fs.writeFileSync(OUTPUT_PATH, JSON.stringify(all, null, 2));
+    // 增量寫檔 (跑到一半中斷不會全丟)
+    fs.writeFileSync(OUTPUT_PATH, JSON.stringify(all, null, 2));
+
+    // 城市間 2 秒間隔, 避免 burst 觸發 429
+    await new Promise((r) => setTimeout(r, 2000));
+  }
 
   console.log(`\n✅ 完成:`);
   console.log(`   景點: ${totalScenic.toLocaleString()}`);

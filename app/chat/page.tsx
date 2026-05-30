@@ -1214,6 +1214,45 @@ function PlanDetailStateful({
     URL.revokeObjectURL(url);
   };
 
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [savedMsg, setSavedMsg] = useState<string>("");
+
+  const handleSave = async () => {
+    setSaveState("saving");
+    setSavedMsg("");
+    try {
+      const res = await fetch("/api/itineraries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: plan.theme,
+          wizardData: data,
+          days,
+          reasons: plan.reasons,
+          estimatedCost: plan.estimatedCost,
+          source: "ai",
+          isPublic: false,
+        }),
+      });
+      if (res.status === 401) {
+        setSaveState("idle");
+        onLoginRequired("save");
+        return;
+      }
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
+      setSaveState("saved");
+      setSavedMsg("已儲存到「我的行程」");
+      setTimeout(() => setSaveState("idle"), 3000);
+    } catch (e) {
+      setSaveState("error");
+      setSavedMsg(e instanceof Error ? e.message : "儲存失敗");
+      setTimeout(() => setSaveState("idle"), 5000);
+    }
+  };
+
   return (
     <div className="mt-8 rounded-2xl border-2 border-orange-300 bg-white p-6 shadow-lg sm:p-8">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -1232,13 +1271,32 @@ function PlanDetailStateful({
             <Share2 size={13} /> 分享
           </button>
           <button
-            onClick={() => onLoginRequired("save")}
-            className="flex items-center gap-1.5 rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-stone-700"
+            onClick={handleSave}
+            disabled={saveState === "saving"}
+            className={cx(
+              "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-white transition",
+              saveState === "saved"
+                ? "bg-emerald-600"
+                : saveState === "error"
+                  ? "bg-rose-600"
+                  : "bg-stone-900 hover:bg-stone-700",
+              saveState === "saving" && "opacity-60 cursor-wait"
+            )}
           >
-            <Bookmark size={13} /> 儲存
+            <Bookmark size={13} />
+            {saveState === "saving" ? "儲存中..." : saveState === "saved" ? "✓ 已儲存" : saveState === "error" ? "✗ 失敗" : "儲存"}
           </button>
         </div>
       </div>
+
+      {savedMsg && (
+        <div className={cx(
+          "mb-3 rounded-lg px-3 py-2 text-xs",
+          saveState === "error" ? "bg-rose-50 text-rose-900 border border-rose-200" : "bg-emerald-50 text-emerald-900 border border-emerald-200"
+        )}>
+          {savedMsg}
+        </div>
+      )}
 
       {days.map((day, dayIdx) => (
         <div key={dayIdx}>

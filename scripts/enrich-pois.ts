@@ -93,7 +93,7 @@ type EnrichResult = {
   reasoning: string;
 };
 
-async function enrichOne(client: Anthropic, raw: TdxRawPoi): Promise<EnrichResult | null> {
+async function enrichOne(client: Anthropic, raw: TdxRawPoi, attempt = 1): Promise<EnrichResult | null> {
   const name = raw.ScenicSpotName ?? raw.RestaurantName ?? "(無名)";
   const desc = raw.DescriptionDetail ?? raw.Description ?? "";
   const addr = raw.Address ?? "(無地址)";
@@ -121,7 +121,14 @@ async function enrichOne(client: Anthropic, raw: TdxRawPoi): Promise<EnrichResul
     if (!toolUse || toolUse.type !== "tool_use") return null;
     return toolUse.input as EnrichResult;
   } catch (err) {
-    console.warn(`    ⚠ ${name}: ${err instanceof Error ? err.message : err}`);
+    const msg = err instanceof Error ? err.message : String(err);
+    // 429 / overloaded → 指數 backoff retry
+    if (attempt <= 3 && /429|overload|rate/i.test(msg)) {
+      const waitS = 5 * attempt;
+      await new Promise((r) => setTimeout(r, waitS * 1000));
+      return enrichOne(client, raw, attempt + 1);
+    }
+    console.warn(`    ⚠ ${name}: ${msg.slice(0, 100)}`);
     return null;
   }
 }
@@ -187,54 +194,62 @@ async function main() {
   let skipped = 0;
   let kept = 0;
   const startTime = Date.now();
+  const CONCURRENCY = 5; // 並行 5 個 Claude calls (Tier 1 安全, 有 429 retry)
 
-  for (const raw of targets) {
+  function makeEnrichedPoi(raw: TdxRawPoi, result: EnrichResult): EnrichedPoi {
     const sourceId = raw.ScenicSpotID ?? raw.RestaurantID ?? "";
     const name = raw.ScenicSpotName ?? raw.RestaurantName ?? "(無名)";
+    const lat = raw.Position?.PositionLat ?? raw.PositionLat ?? 0;
+    const lng = raw.Position?.PositionLon ?? raw.PositionLon ?? 0;
+    return {
+      id: `tdx_${raw._sourceType}_${sourceId}`,
+      name,
+      category: result.category,
+      district: extractDistrict(raw.Address ?? ""),
+      city: raw.City,
+      address: raw.Address ?? "",
+      lat, lng,
+      phone: raw.Phone,
+      openTime: raw.OpenTime,
+      description: (raw.DescriptionDetail ?? raw.Description ?? "").slice(0, 300),
+      photos: extractPhotos(raw),
+      ageMin: result.ageMin,
+      ageMax: result.ageMax,
+      durationMin: result.durationMin,
+      priceMin: result.priceMin,
+      priceMax: result.priceMax,
+      parentingTags: result.parentingTags,
+      kidScore: result.kidScore,
+      aiReasoning: result.reasoning,
+      source: "tdx",
+      sourceId,
+      enrichedAt: new Date().toISOString(),
+    };
+  }
 
-    const result = await enrichOne(client, raw);
-    processed++;
+  // 批次並行處理
+  for (let i = 0; i < targets.length; i += CONCURRENCY) {
+    const batch = targets.slice(i, i + CONCURRENCY);
+    const results = await Promise.all(batch.map((raw) => enrichOne(client, raw)));
 
-    if (!result) {
-      skipped++;
-    } else if (result.kidScore < 5) {
-      skipped++;
-      if (processed % 20 === 0) console.log(`  ${processed}/${targets.length} skip ${name} (score ${result.kidScore})`);
-    } else {
-      const lat = raw.Position?.PositionLat ?? raw.PositionLat ?? 0;
-      const lng = raw.Position?.PositionLon ?? raw.PositionLon ?? 0;
-      const enrichedPoi: EnrichedPoi = {
-        id: `tdx_${raw._sourceType}_${sourceId}`,
-        name,
-        category: result.category,
-        district: extractDistrict(raw.Address ?? ""),
-        city: raw.City,
-        address: raw.Address ?? "",
-        lat,
-        lng,
-        phone: raw.Phone,
-        openTime: raw.OpenTime,
-        description: (raw.DescriptionDetail ?? raw.Description ?? "").slice(0, 300),
-        photos: extractPhotos(raw),
-        ageMin: result.ageMin,
-        ageMax: result.ageMax,
-        durationMin: result.durationMin,
-        priceMin: result.priceMin,
-        priceMax: result.priceMax,
-        parentingTags: result.parentingTags,
-        kidScore: result.kidScore,
-        aiReasoning: result.reasoning,
-        source: "tdx",
-        sourceId,
-        enrichedAt: new Date().toISOString(),
-      };
-      enriched.push(enrichedPoi);
-      kept++;
+    for (let j = 0; j < batch.length; j++) {
+      const raw = batch[j];
+      const result = results[j];
+      processed++;
+      if (!result) {
+        skipped++;
+      } else if (result.kidScore < 5) {
+        skipped++;
+      } else {
+        enriched.push(makeEnrichedPoi(raw, result));
+        kept++;
+      }
     }
 
-    // Flush periodically
-    if (processed % FLUSH_EVERY === 0) {
-      fs.writeFileSync(OUTPUT_PATH, JSON.stringify(enriched, null, 2));
+    // Flush after each batch
+    fs.writeFileSync(OUTPUT_PATH, JSON.stringify(enriched, null, 2));
+
+    if (processed % (FLUSH_EVERY * 2) === 0 || processed === targets.length) {
       const elapsed = (Date.now() - startTime) / 1000;
       const rate = processed / elapsed;
       const remaining = (targets.length - processed) / rate;
@@ -244,8 +259,8 @@ async function main() {
       );
     }
 
-    // Throttle: 10 req/s (Anthropic free tier safe)
-    await new Promise((r) => setTimeout(r, 100));
+    // 批次間短暫間隔
+    await new Promise((r) => setTimeout(r, 150));
   }
 
   // Final flush

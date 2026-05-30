@@ -10,10 +10,13 @@
     "tdx:scrape": "tsx scripts/scrape-tdx.ts",
     "tdx:enrich": "tsx scripts/enrich-pois.ts",
     "tdx:build": "tsx scripts/build-tdx-pois.ts",
-    "tdx:all": "pnpm tdx:scrape && pnpm tdx:enrich && pnpm tdx:build"
+    "tdx:all": "pnpm tdx:scrape && pnpm tdx:enrich && pnpm tdx:build",
+    "pois:import": "tsx scripts/import-pois.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.106.2",
     "lucide-react": "^1.17.0",
     "next": "16.2.6",
     "react": "19.2.4",
