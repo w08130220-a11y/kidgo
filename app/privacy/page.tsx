@@ -3,7 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { Nav } from "@/components/Nav";
 
 export const metadata = {
-  title: "隱私權政策 ・ ChildTrip",
+  title: "隱私權政策 ・ kidgo",
 };
 
 export default function PrivacyPage() {
@@ -33,7 +33,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-xl font-semibold text-stone-900">1. 我們是誰</h2>
             <p>
-              ChildTrip（以下稱「本服務」）是一個提供台灣親子行程規劃建議的網路工具。
+              kidgo（以下稱「本服務」）是一個提供台灣親子行程規劃建議的網路工具。
               本服務由獨立開發者營運，致力於為雙薪家庭提供高品質的親子出遊推薦。
             </p>
             <p>
@@ -196,7 +196,7 @@ export default function PrivacyPage() {
               對隱私政策有任何疑問、要求行使個資權利、或回報資安事件，請寄信至：
             </p>
             <p className="rounded-md bg-stone-100 p-3 font-mono text-xs">
-              privacy@childtrip.tw &nbsp;（v1 內測階段請改寄至創辦人個人信箱，登入後設定頁查詢）
+              privacy@kidgo.tw &nbsp;（v1 內測階段請改寄至創辦人個人信箱，登入後設定頁查詢）
             </p>
           </section>
 

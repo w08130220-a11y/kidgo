@@ -1207,7 +1207,7 @@ function PlanDetailStateful({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `childtrip-${plan.theme}.ics`;
+    a.download = `kidgo-${plan.theme}.ics`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1727,7 +1727,7 @@ function generateICS(plan: GeneratedPlan, data: WizardData): string {
       events.push(
         [
           "BEGIN:VEVENT",
-          `UID:${plan.id}-d${dayIdx}-s${slotIdx}@childtrip.tw`,
+          `UID:${plan.id}-d${dayIdx}-s${slotIdx}@kidgo.tw`,
           `DTSTAMP:${stamp}`,
           `DTSTART:${fmtICSDate(start)}`,
           `DTEND:${fmtICSDate(end)}`,
@@ -1746,7 +1746,7 @@ function generateICS(plan: GeneratedPlan, data: WizardData): string {
   return [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//ChildTrip//AI//ZH-TW",
+    "PRODID:-//kidgo//AI//ZH-TW",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     ...events,

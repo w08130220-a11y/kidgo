@@ -3,7 +3,7 @@ import { PoiCard } from "@/components/PoiCard";
 import { pois } from "@/lib/mock-data";
 
 export const metadata = {
-  title: "探索親子景點 ・ ChildTrip",
+  title: "探索親子景點 ・ kidgo",
 };
 
 export default function PoiListPage() {
@@ -16,7 +16,7 @@ export default function PoiListPage() {
             探索 {pois.length}+ 親子景點
           </h1>
           <p className="mt-2 text-sm text-stone-600">
-            全台北、新北雙北精選親子場館。從爸媽真實走過的經驗來的。
+            全台 22 縣市精選親子場館。從爸媽真實走過的經驗來的。
           </p>
         </div>
 

@@ -16,16 +16,16 @@ export default function Home() {
       <section className="relative overflow-hidden border-b border-stone-200 bg-gradient-to-b from-orange-50 via-stone-50 to-stone-50">
         <div className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6 sm:py-24">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-orange-200 bg-white px-3 py-1 text-xs font-medium text-orange-700">
-            <Sparkles size={12} /> 雙薪父母專用 ・ 完全免費
+            <Sparkles size={12} /> 全台 22 縣市 ・ 完全免費 ・ AI 即時規劃
           </span>
           <h1 className="mt-6 text-4xl font-extrabold leading-tight tracking-tight text-stone-900 sm:text-6xl">
-            親子週末，<br className="sm:hidden" />
+            全台親子行程，<br className="sm:hidden" />
             <span className="text-orange-600">30 秒</span>規劃完成。
           </h1>
           <p className="mt-5 text-base text-stone-600 sm:text-lg">
-            告訴 AI 小孩幾歲、想戶外還是室內、預算多少 ...
+            告訴 AI 孩子幾歲、預算多少、想戶外/室內/動物/學習 ...
             <br className="hidden sm:block" />
-            幫你排好完整一日遊：早餐 → 景點 → 點心 → 景點 → 晚餐。
+            從北到南、從半日到 3 天 2 夜，一鍵生出完整行程含餐廳與費用。
           </p>
 
           {/* CTA */}
@@ -46,7 +46,7 @@ export default function Home() {
               </span>
             </Link>
             <p className="mt-3 text-xs text-stone-500">
-              全台北 200+ 親子場館．AI 不會給你不存在的景點．30 秒完成
+              全台 22 縣市 100+ 親子場館．AI 不會給你不存在的景點．30 秒完成
             </p>
           </div>
         </div>
@@ -259,7 +259,7 @@ export default function Home() {
           <div className="flex flex-col items-center justify-between gap-4 text-xs text-stone-500 sm:flex-row">
             <div className="flex items-center gap-2">
               <span className="text-base">🧒</span>
-              <span className="font-bold text-stone-700">ChildTrip</span>
+              <span className="font-bold text-stone-700">kidgo</span>
               <span>·</span>
               <span>v0.1 — 內測中</span>
             </div>

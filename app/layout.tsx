@@ -10,8 +10,8 @@ const notoTC = Noto_Sans_TC({
 });
 
 export const metadata: Metadata = {
-  title: "ChildTrip — 親子週末，30 秒規劃完成",
-  description: "雙薪父母的親子行程 AI 助手。輸入小孩年齡、預算、想要的氛圍，30 秒生出完整一日遊。",
+  title: "kidgo — 全台親子行程，30 秒 AI 規劃",
+  description: "全台 22 縣市親子景點 AI 規劃工具。輸入孩子年齡、預算、想要的氛圍，30 秒生出完整一日/多日行程，含餐廳、景點、預估費用。",
 };
 
 export default function RootLayout({

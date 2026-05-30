@@ -3,7 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { Nav } from "@/components/Nav";
 
 export const metadata = {
-  title: "服務條款 ・ ChildTrip",
+  title: "服務條款 ・ kidgo",
 };
 
 export default function TermsPage() {
@@ -30,7 +30,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-stone-900">1. 服務性質</h2>
             <p>
-              ChildTrip（以下稱「本服務」）提供 AI 親子行程**建議**工具。
+              kidgo（以下稱「本服務」）提供 AI 親子行程**建議**工具。
               我們**不**是旅行社、**不**代訂景點門票、**不**處理金流。
               本服務產出的行程僅為參考，您應自行向各場館確認營業時間、票價、適齡規範等資訊後再行前往。
             </p>

@@ -8,9 +8,9 @@ export function Nav() {
         <Link href="/" className="flex items-center gap-2">
           <span className="text-2xl">🧒</span>
           <span className="text-lg font-bold tracking-tight">
-            ChildTrip
+            kidgo
             <span className="ml-1 hidden text-xs font-normal text-stone-500 sm:inline">
-              親子週末．30 秒規劃
+              全台親子．30 秒規劃
             </span>
           </span>
         </Link>
