@@ -1,7 +1,15 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Noto_Sans_TC } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
+
+// Mobile-friendly viewport (沒設的話 iOS Safari 會把頁面當 980px 桌機渲染再 zoom out)
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+};
 
 const notoTC = Noto_Sans_TC({
   variable: "--font-noto-tc",
@@ -57,7 +65,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-Hant" className={`${notoTC.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-stone-50 text-stone-900 font-sans">
+      <body className="min-h-full flex flex-col bg-stone-50 text-stone-900 font-sans overflow-x-hidden">
         {children}
         {/* Google Analytics 4 (有設 NEXT_PUBLIC_GA_ID env 才載入) */}
         {GA_ID && (
