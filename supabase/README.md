@@ -62,3 +62,57 @@ pnpm pois:import
 ```
 
 會把 hand-curated + seed + (跑完 enrich 的) TDX POI 一次灌進 Supabase `pois` table.
+
+### 6. Storage bucket (UGC 上傳照片需要)
+
+Dashboard → Storage → New bucket:
+
+```
+Name:           poi-photos
+Public bucket:  ✓ 勾起來 (public read)
+File size limit: 5 MB
+Allowed MIME types: image/jpeg, image/png, image/webp
+```
+
+建好後加 RLS policy 讓登入用戶可以寫:
+
+```sql
+-- 寫入: 登入用戶可以在自己的資料夾下上傳
+CREATE POLICY "poi_photos_authenticated_insert"
+  ON storage.objects FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    bucket_id = 'poi-photos'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+-- 讀取: 任何人都可以讀 (public bucket)
+CREATE POLICY "poi_photos_public_read"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'poi-photos');
+
+-- 用戶可以刪自己的
+CREATE POLICY "poi_photos_owner_delete"
+  ON storage.objects FOR DELETE
+  TO authenticated
+  USING (
+    bucket_id = 'poi-photos'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  );
+```
+
+### 7. Admin 設定 (UGC 審核)
+
+要審核用戶上傳的 POI, 把你的 user ID 加到 env:
+
+1. 先登入網站, 去 `/admin/pois` (會被擋, 但會顯示你的 user ID)
+2. 複製那個 UUID
+3. 加到 `.env.local` (本地) + Vercel env (production):
+   ```
+   ADMIN_USER_IDS=你的-uuid-在這
+   ```
+   多個 admin 用逗號分隔:
+   ```
+   ADMIN_USER_IDS=uuid-1,uuid-2,uuid-3
+   ```
+4. Vercel 改完要 Redeploy 才生效

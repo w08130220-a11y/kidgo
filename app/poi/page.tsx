@@ -82,13 +82,21 @@ export default async function PoiListPage({
     <>
       <Nav />
       <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            探索 {byRegion["全部"]?.toLocaleString() ?? 0}+ 親子景點
-          </h1>
-          <p className="mt-2 text-sm text-stone-600">
-            全台 22 縣市．政府觀光署 + 編輯精選 + 爸媽推薦．依評分排序
-          </p>
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              探索 {byRegion["全部"]?.toLocaleString() ?? 0}+ 親子景點
+            </h1>
+            <p className="mt-2 text-sm text-stone-600">
+              全台 22 縣市．政府觀光署 + 編輯精選 + 爸媽推薦．依評分排序
+            </p>
+          </div>
+          <Link
+            href="/poi/new"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-600"
+          >
+            + 新增景點
+          </Link>
         </div>
 
         {/* PRIMARY: 區域 tabs */}
