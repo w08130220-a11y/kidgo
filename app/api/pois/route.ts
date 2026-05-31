@@ -8,7 +8,7 @@
  * 圖片: client 直接上傳到 Storage bucket `poi-photos` 取得 URL, 這裡只存 URL.
  */
 import { NextResponse } from "next/server";
-import { createServerClient } from "@/lib/supabase/server";
+import { createServerClient, createAdminClient } from "@/lib/supabase/server";
 
 const VALID_CATEGORIES = ["park", "museum", "restaurant", "zoo", "amusement", "indoor"] as const;
 type Category = (typeof VALID_CATEGORIES)[number];
@@ -95,8 +95,10 @@ export async function POST(req: Request) {
     : [];
 
   // ─── 速率限制: 每用戶每天最多 5 個 pending 上傳 ──────────────
+  // 用 admin 查 (避免 RLS filter 掉 pending 的看不到)
+  const admin = createAdminClient();
   const dayAgo = new Date(Date.now() - 86_400_000).toISOString();
-  const { count: recentCount } = await supabase
+  const { count: recentCount } = await admin
     .from("pois")
     .select("id", { count: "exact", head: true })
     .eq("contributor_user_id", user.id)
@@ -133,7 +135,10 @@ export async function POST(req: Request) {
     view_count: 0,
   };
 
-  const { data, error } = await supabase
+  // 用 admin client 寫入, 繞 RLS.
+  // 安全性: 上面已驗證 user (line ~52) + 強制 contributor_user_id = user.id + status='pending'
+  // RLS policy 留著當 defense-in-depth (擋直接走 PostgREST anon key 的人)
+  const { data, error } = await admin
     .from("pois")
     .insert(row)
     .select("id, name, status")
