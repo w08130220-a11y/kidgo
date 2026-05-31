@@ -22,9 +22,11 @@ export default function TermsPage() {
         <p className="mt-2 text-sm text-stone-500">最後更新：2026 年 5 月 30 日</p>
 
         <div className="mt-8 space-y-6 text-sm leading-relaxed text-stone-700">
-          <section className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900">
-            <strong>⚠ v1 內測階段聲明：</strong>本條款為起草版，正式上線前將委請律師檢視。
-            使用本服務即表示同意本條款內容。
+          <section className="rounded-lg border border-stone-200 bg-stone-50 p-4 text-xs text-stone-700">
+            使用本服務即表示同意以下條款內容。如有疑問請來信
+            <a href="mailto:w13081308@gmail.com" className="ml-1 text-orange-600 hover:underline">
+              w13081308@gmail.com
+            </a>。
           </section>
 
           <section>
@@ -91,7 +93,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-stone-900">6. AI 規劃次數限制</h2>
             <p>
-              為維持服務品質與成本，每個 IP / 帳號每日有 AI 規劃次數上限（v1 為 3 次/日）。
+              為維持服務品質與成本，每個 IP / 帳號每日有 AI 規劃次數上限（目前為 3 次/日）。
               超出後請隔日再試。未來訂閱版將提供更高額度。
             </p>
           </section>
@@ -99,7 +101,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-stone-900">7. 服務變更與終止</h2>
             <ul className="ml-5 list-disc space-y-1">
-              <li>本服務為內測階段，功能、UI、價格、規則隨時可能調整。</li>
+              <li>功能、UI、價格、規則可能依產品發展調整。</li>
               <li>重大變更會於本頁公告並通知已登入用戶。</li>
               <li>本服務保留隨時暫停或終止全部或部分服務之權利。</li>
             </ul>

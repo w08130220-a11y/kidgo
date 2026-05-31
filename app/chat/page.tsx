@@ -761,8 +761,8 @@ function Step2TimePlace({
         </div>
         {(data.duration === "d2n1" || data.duration === "d3n2") && (
           <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-            <strong>多日行程 beta：</strong> AI 會幫你排各天景點 + 餐廳。
-            <strong>夜晚住宿請自行安排</strong>（v1 不含住宿推薦）。
+            <strong>多日行程：</strong> AI 會幫你排各天景點。
+            <strong>夜晚住宿請自行安排</strong>。
           </div>
         )}
       </Field>
@@ -951,9 +951,6 @@ function Step4MealsNeeds({
         />
       </Field>
 
-      <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-xs text-stone-600">
-        💡 v1 暫不安排用餐, 行程只給「景點」, 用餐你決定就好 (景點周邊餐廳 Google 一下會更彈性)
-      </div>
     </div>
   );
 }
@@ -1416,7 +1413,6 @@ function PlanDetailStateful({
             <div className="my-6 flex items-center gap-3 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-900">
               <Moon size={16} />
               <span className="font-semibold">第 {dayIdx} 晚請自行安排住宿</span>
-              <span className="text-xs text-violet-700">(v1 暫不含住宿推薦)</span>
             </div>
           )}
           {days.length > 1 && (

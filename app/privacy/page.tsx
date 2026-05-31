@@ -23,10 +23,8 @@ export default function PrivacyPage() {
 
         <div className="prose prose-stone mt-8 max-w-none space-y-6 text-sm leading-relaxed text-stone-700">
           <section>
-            <p className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900">
-              <strong>⚠ v1 內測階段聲明：</strong>本服務目前為內測，本文件為**起草版本**，非經律師審核之正式條款。
-              正式上線前將委請熟悉電商與兒少資訊保護之律師事務所檢視。
-              在內測期間使用本服務即表示理解此狀態。
+            <p className="rounded-lg border border-stone-200 bg-stone-50 p-4 text-xs text-stone-700">
+              本政策說明 kidgo 如何收集、使用與保護您的個人資料。使用本服務即表示理解並同意本政策內容。
             </p>
           </section>
 
@@ -196,7 +194,7 @@ export default function PrivacyPage() {
               對隱私政策有任何疑問、要求行使個資權利、或回報資安事件，請寄信至：
             </p>
             <p className="rounded-md bg-stone-100 p-3 font-mono text-xs">
-              privacy@kidgo.tw &nbsp;（v1 內測階段請改寄至創辦人個人信箱，登入後設定頁查詢）
+              w13081308@gmail.com
             </p>
           </section>
 
