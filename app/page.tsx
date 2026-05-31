@@ -58,21 +58,13 @@ export default async function Home() {
 
       {/* Featured Itineraries */}
       <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-        <div className="mb-6 flex items-end justify-between">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-              本週熱門行程
-            </h2>
-            <p className="mt-1 text-sm text-stone-600">
-              其他爸媽公開的行程，可一鍵複製成你的
-            </p>
-          </div>
-          <Link
-            href="/poi"
-            className="hidden text-sm font-medium text-orange-600 hover:text-orange-700 sm:inline"
-          >
-            看全部 →
-          </Link>
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            本週熱門行程
+          </h2>
+          <p className="mt-1 text-sm text-stone-600">
+            其他爸媽公開的行程，可一鍵複製成你的
+          </p>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -146,7 +138,7 @@ export default async function Home() {
       {/* Featured POIs */}
       <section className="border-t border-stone-200 bg-white">
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-          <div className="mb-6 flex items-end justify-between">
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-2">
             <div>
               <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
                 新加入的親子景點
@@ -157,7 +149,7 @@ export default async function Home() {
             </div>
             <Link
               href="/poi"
-              className="hidden text-sm font-medium text-orange-600 hover:text-orange-700 sm:inline"
+              className="text-sm font-medium text-orange-600 hover:text-orange-700"
             >
               看全部 {totalCount.toLocaleString()}+ →
             </Link>
@@ -169,6 +161,17 @@ export default async function Home() {
             ))}
           </div>
 
+          {/* 大顆 CTA: 看更多景點 */}
+          <div className="mt-6 text-center">
+            <Link
+              href="/poi"
+              className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-orange-600 sm:text-base"
+            >
+              探索全部 {totalCount.toLocaleString()}+ 景點 <ArrowRight size={16} />
+            </Link>
+          </div>
+
+          {/* UGC 上傳 CTA */}
           <div className="mt-8 rounded-2xl border-2 border-dashed border-stone-300 bg-stone-50 p-6 text-center">
             <p className="text-sm font-semibold text-stone-700">
               知道一個還沒上的好地方？
