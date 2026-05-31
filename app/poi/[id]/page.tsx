@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, MapPin, Clock, Wallet, Sparkles, Bookmark } from "lucide-react";
+import { ArrowLeft, MapPin, Clock, Wallet, Sparkles } from "lucide-react";
 import { Nav } from "@/components/Nav";
 import { PoiImage } from "@/components/PoiImage";
 import { LikeButton } from "@/components/LikeButton";
@@ -103,9 +103,6 @@ export default async function PoiDetailPage({
           >
             <Sparkles size={16} /> 加進 AI 行程
           </Link>
-          <button className="flex items-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm font-medium text-stone-700 hover:bg-stone-50">
-            <Bookmark size={16} />
-          </button>
           <LikeButton
             targetType="poi"
             targetId={poi.id}

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Compass, Sparkles, User, Bookmark, LogOut, Plus } from "lucide-react";
+import { Compass, Sparkles, User, Bookmark, LogOut, Plus, Heart } from "lucide-react";
 import { createServerClient } from "@/lib/supabase/server";
 
 export async function Nav() {
@@ -103,6 +103,12 @@ function UserMenu({ user }: { user: { email?: string; name?: string; avatar?: st
           className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-stone-700 hover:bg-stone-100"
         >
           <Bookmark size={14} /> 我的行程
+        </Link>
+        <Link
+          href="/me/likes"
+          className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-stone-700 hover:bg-stone-100"
+        >
+          <Heart size={14} /> 我按過讚的
         </Link>
         <Link
           href="/me/uploads"
