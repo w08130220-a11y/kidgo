@@ -25,12 +25,12 @@ export async function Nav() {
   return (
     <header className="sticky top-0 z-40 border-b border-stone-200/70 bg-stone-50/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-3 sm:px-6">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2.5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="kidgo" className="h-8 w-8" />
-          <span className="text-lg font-bold tracking-tight">
+          <img src="/logo.png" alt="kidgo" className="h-11 w-11 sm:h-12 sm:w-12" />
+          <span className="text-xl font-bold tracking-tight sm:text-2xl">
             kidgo
-            <span className="ml-1 hidden text-xs font-normal text-stone-500 md:inline">
+            <span className="ml-1.5 hidden text-xs font-normal text-stone-500 md:inline">
               全台親子．30 秒規劃
             </span>
           </span>

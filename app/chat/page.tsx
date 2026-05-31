@@ -110,10 +110,19 @@ export default function ChatPage() {
   };
 
   const [rateLimit, setRateLimit] = useState<{ remaining: number; resetAt: number; blocked: boolean } | null>(null);
-  const [loginPrompt, setLoginPrompt] = useState<null | "save" | "share" | "calendar">(null);
+  const [loginPrompt, setLoginPrompt] = useState<null | "save" | "share" | "calendar" | "generate">(null);
   const [poiMap, setPoiMap] = useState<Map<string, Poi>>(new Map());
 
   const handleSubmit = async () => {
+    // 先檢查登入. 未登入 → 跳登入 modal, 不消耗 AI 規劃次數
+    const { createClient } = await import("@/lib/supabase/client");
+    const sb = createClient();
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) {
+      setLoginPrompt("generate");
+      return;
+    }
+
     setMode("results");
     setIsThinking(true);
     setGenerated(null);
@@ -299,7 +308,7 @@ function LoginPromptModal({
   action,
   onClose,
 }: {
-  action: "save" | "share" | "calendar";
+  action: "save" | "share" | "calendar" | "generate";
   onClose: () => void;
 }) {
   const [magicEmail, setMagicEmail] = useState("");
@@ -310,11 +319,13 @@ function LoginPromptModal({
     save: "儲存行程需要登入",
     share: "分享行程需要登入",
     calendar: "加到行事曆需要登入",
+    generate: "產生 AI 行程需要登入",
   };
   const descMap = {
     save: "登入後可以儲存無限個行程，跨裝置同步，永遠找得到。",
     share: "登入後分享行程會帶上你的暱稱，其他爸媽看到還能追蹤你。",
     calendar: "登入讓我們知道是誰的行程。",
+    generate: "登入後就能立即用 AI 規劃, 同時自動幫你儲存. 每天 3 次免費.",
   };
 
   const handleGoogle = async () => {
