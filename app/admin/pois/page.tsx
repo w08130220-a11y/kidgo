@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Nav } from "@/components/Nav";
 import { createServerClient } from "@/lib/supabase/server";
@@ -78,6 +79,12 @@ export default async function AdminPoisPage() {
     <>
       <Nav />
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+        <Link
+          href="/admin"
+          className="mb-4 inline-flex items-center gap-1 text-sm text-stone-500 hover:text-stone-900"
+        >
+          ← Dashboard
+        </Link>
         <h1 className="text-3xl font-bold tracking-tight">POI 審核佇列</h1>
         <p className="mt-2 text-sm text-stone-600">
           待審 {pending?.length ?? 0} 個. 按通過 → 立刻全站可見.
