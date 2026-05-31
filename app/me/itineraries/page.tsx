@@ -53,16 +53,14 @@ export default async function MyItinerariesPage() {
           <ArrowLeft size={14} /> 回首頁
         </Link>
 
-        <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0 flex-1">
-            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">我的行程</h1>
-            <p className="mt-2 text-sm text-stone-600">
-              你儲存的所有行程 · 共 {itineraries?.length ?? 0} 個
-            </p>
-          </div>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">我的行程</h1>
+          <p className="mt-2 text-sm text-stone-600">
+            你儲存的所有行程 · 共 {itineraries?.length ?? 0} 個
+          </p>
           <Link
             href="/chat"
-            className="inline-flex shrink-0 items-center justify-center gap-1.5 self-start rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 sm:self-auto"
+            className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-600"
           >
             + 規劃新行程
           </Link>
