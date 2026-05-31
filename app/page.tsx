@@ -67,7 +67,7 @@ export default async function Home() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3 sm:mx-0 sm:grid sm:snap-none sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
           {featuredItineraries.map((it) => {
             const itPois = it.poiIds
               .map((id) => getDemoPoi(id))
@@ -76,7 +76,7 @@ export default async function Home() {
               <Link
                 key={it.id}
                 href={`/itinerary/${it.id}`}
-                className="group flex flex-col gap-3 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                className="group flex w-[92%] shrink-0 snap-start flex-col gap-3 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:w-auto sm:shrink"
               >
                 <div className="flex items-center gap-2 text-xs text-stone-500">
                   <span className="rounded-full bg-stone-100 px-2 py-0.5">
