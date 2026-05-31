@@ -196,10 +196,11 @@ export default async function Home() {
         <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
           <div className="flex flex-col items-center justify-between gap-4 text-xs text-stone-500 sm:flex-row">
             <div className="flex items-center gap-2">
-              <span className="text-base">🧒</span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.png" alt="kidgo" className="h-6 w-6" />
               <span className="font-bold text-stone-700">kidgo</span>
               <span>·</span>
-              <span>v0.1 — 內測中</span>
+              <span>© 2026 全台親子・30 秒規劃</span>
             </div>
             <div className="flex gap-4">
               <Link href="/privacy" className="hover:text-stone-900">隱私政策</Link>

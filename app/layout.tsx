@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Noto_Sans_TC } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 const notoTC = Noto_Sans_TC({
@@ -9,10 +10,45 @@ const notoTC = Noto_Sans_TC({
   display: "swap",
 });
 
+const SITE_URL = "https://kidgo.life";
+const SITE_NAME = "kidgo";
+const TITLE = "kidgo — 全台親子行程，30 秒 AI 規劃";
+const DESC =
+  "全台 22 縣市親子景點 AI 規劃工具。輸入孩子年齡、預算、想要的氛圍，30 秒生出完整一日/多日行程，含景點與預估費用。";
+
 export const metadata: Metadata = {
-  title: "kidgo — 全台親子行程，30 秒 AI 規劃",
-  description: "全台 22 縣市親子景點 AI 規劃工具。輸入孩子年齡、預算、想要的氛圍，30 秒生出完整一日/多日行程，含餐廳、景點、預估費用。",
+  metadataBase: new URL(SITE_URL),
+  title: TITLE,
+  description: DESC,
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
+  openGraph: {
+    type: "website",
+    locale: "zh_TW",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: TITLE,
+    description: DESC,
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "kidgo - 全台親子行程 AI 規劃",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESC,
+    images: ["/og-image.png"],
+  },
 };
+
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
 
 export default function RootLayout({
   children,
@@ -23,6 +59,23 @@ export default function RootLayout({
     <html lang="zh-Hant" className={`${notoTC.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-stone-50 text-stone-900 font-sans">
         {children}
+        {/* Google Analytics 4 (有設 NEXT_PUBLIC_GA_ID env 才載入) */}
+        {GA_ID && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="ga-init" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${GA_ID}', { send_page_view: true });
+              `}
+            </Script>
+          </>
+        )}
       </body>
     </html>
   );
