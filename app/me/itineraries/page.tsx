@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { ArrowLeft, Bookmark, Calendar, Eye, Heart, Trash2 } from "lucide-react";
 import { Nav } from "@/components/Nav";
 import { createServerClient } from "@/lib/supabase/server";
+import { ItineraryShareControls } from "./ItineraryShareControls";
 
 // Server Action for delete (執行在 server 端, RLS 自動套用)
 async function deleteItineraryAction(formData: FormData) {
@@ -37,7 +38,7 @@ export default async function MyItinerariesPage() {
 
   const { data: itineraries, error } = await supabase
     .from("itineraries")
-    .select("id, title, days, estimated_cost, is_public, like_count, view_count, created_at")
+    .select("id, title, days, estimated_cost, is_public, share_slug, like_count, view_count, created_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -126,23 +127,30 @@ export default async function MyItinerariesPage() {
                     )}
                   </div>
                 </div>
-                <div className="flex shrink-0 gap-2">
-                  <Link
-                    href={`/itinerary/${it.id}`}
-                    className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-50"
-                  >
-                    開啟
-                  </Link>
-                  <form action={deleteItineraryAction} className="inline">
-                    <input type="hidden" name="id" value={it.id} />
-                    <button
-                      type="submit"
-                      className="rounded-lg border border-rose-200 bg-white px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50"
-                      title="刪除"
+                <div className="flex shrink-0 flex-col items-end gap-2">
+                  <div className="flex gap-2">
+                    <Link
+                      href={`/itinerary/${it.id}`}
+                      className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-50"
                     >
-                      <Trash2 size={14} />
-                    </button>
-                  </form>
+                      開啟
+                    </Link>
+                    <form action={deleteItineraryAction} className="inline">
+                      <input type="hidden" name="id" value={it.id} />
+                      <button
+                        type="submit"
+                        className="rounded-lg border border-rose-200 bg-white px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50"
+                        title="刪除"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </form>
+                  </div>
+                  <ItineraryShareControls
+                    id={it.id}
+                    isPublic={it.is_public ?? false}
+                    shareSlug={(it as { share_slug: string | null }).share_slug ?? null}
+                  />
                 </div>
               </li>
             ))}

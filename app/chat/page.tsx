@@ -73,12 +73,12 @@ const defaultData: WizardData = {
   intensity: "auto",
   budget: "mid",
   vibes: [],
-  meals: ["brunch", "snack", "dinner"],
+  meals: [], // v1.6: 不再規劃用餐, 保留欄位給 DB schema
   needs: [],
   notes: "",
 };
 
-const STEPS = ["出遊組合", "時間地點", "預算氛圍", "餐飲需求"] as const;
+const STEPS = ["出遊組合", "時間地點", "預算氛圍", "特殊需求"] as const;
 
 // ────────────────────────────────────────────────────────────────────
 // Main page
@@ -266,7 +266,7 @@ export default function ChatPage() {
                 onClick={handleSubmit}
                 className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-orange-500 px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-orange-600 sm:flex-initial sm:px-8"
               >
-                <Sparkles size={16} /> 產生 3 個方案
+                <Sparkles size={16} /> 產生 2 個方案
               </button>
             )}
           </div>
@@ -456,7 +456,7 @@ function subtitleFor(s: number) {
     0: "幾個人出遊？孩子幾歲？沒帶小孩也可以（情侶/長輩同行）。",
     1: "什麼時候去？從哪、想去哪？走幾天？",
     2: "預算大概多少？想要什麼樣的氛圍？(可複選 1-3 個)",
-    3: "要吃幾餐？有什麼特別需要的（推車、雨備等）？",
+    3: "有什麼特別需要的（推車、雨備等）？還有想補充的嗎？",
   }[s];
 }
 
@@ -917,14 +917,8 @@ function Step3BudgetVibe({
 }
 
 // ────────────────────────────────────────────────────────────────────
-// Step 4 — Meals + Special needs
+// Step 4 — Special needs + notes (v1.6 移除餐飲, 我們只規劃景點)
 // ────────────────────────────────────────────────────────────────────
-
-const MEAL_OPTIONS: { value: Meal; label: string }[] = [
-  { value: "brunch", label: "早午餐" },
-  { value: "snack", label: "下午點心" },
-  { value: "dinner", label: "晚餐" },
-];
 
 const NEED_OPTIONS: { value: Need; label: string }[] = [
   { value: "stroller", label: "推車友善" },
@@ -946,29 +940,6 @@ function Step4MealsNeeds({
 
   return (
     <div className="space-y-8">
-      <Field icon={<UtensilsCrossed size={18} />} label="要包含哪幾餐">
-        <div className="grid grid-cols-3 gap-2">
-          {MEAL_OPTIONS.map((m) => {
-            const active = data.meals.includes(m.value);
-            return (
-              <button
-                key={m.value}
-                onClick={() => update("meals", toggleArr(data.meals, m.value))}
-                className={cx(
-                  "rounded-xl border px-3 py-3 text-sm font-medium transition",
-                  active
-                    ? "border-orange-500 bg-orange-50 text-orange-700"
-                    : "border-stone-200 bg-white text-stone-700 hover:border-stone-300"
-                )}
-              >
-                {active && <Check size={14} className="mr-1 inline" />}
-                {m.label}
-              </button>
-            );
-          })}
-        </div>
-      </Field>
-
       <Field icon={<Check size={18} />} label="特殊需求 (可跳過)">
         <div className="flex flex-wrap gap-2">
           {NEED_OPTIONS.map((n) => {
@@ -1001,6 +972,10 @@ function Step4MealsNeeds({
           className="w-full rounded-xl border border-stone-300 bg-white p-3 text-sm outline-none transition focus:border-orange-400"
         />
       </Field>
+
+      <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-xs text-stone-600">
+        💡 v1 暫不安排用餐, 行程只給「景點」, 用餐你決定就好 (景點周邊餐廳 Google 一下會更彈性)
+      </div>
     </div>
   );
 }
@@ -1084,7 +1059,7 @@ function ResultsView({
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6 sm:py-10">
       <div className="mb-2 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wider text-orange-600">
-        <Sparkles size={14} /> AI 為你產生的 3 個方案
+        <Sparkles size={14} /> AI 為你產生的方案
         {source === "ai" && (
           <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700">
             ⚡ Claude Haiku 4.5
@@ -1148,8 +1123,8 @@ function ResultsView({
   );
 }
 
-const SLOT_LABELS_FULL = ["早午餐", "上午景點", "點心 / 午茶", "下午景點", "晚餐"];
-const SLOT_LABELS_HALF = ["早午餐", "景點", "點心"];
+const SLOT_LABELS_FULL = ["上午", "中午", "下午", "傍晚", "晚上"];
+const SLOT_LABELS_HALF = ["上午", "中午", "下午"];
 
 function slotLabelsFor(duration: Duration): string[] {
   return duration === "half" ? SLOT_LABELS_HALF : SLOT_LABELS_FULL;
@@ -1310,32 +1285,47 @@ function PlanDetailStateful({
 
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [savedMsg, setSavedMsg] = useState<string>("");
+  const [savedItineraryId, setSavedItineraryId] = useState<string | null>(null);
+  const [shareState, setShareState] = useState<"idle" | "working" | "copied" | "error">("idle");
+  const [shareMsg, setShareMsg] = useState<string>("");
+
+  // 內部存檔 (不更新 UI 狀態), 回傳 id
+  const ensureSaved = async (): Promise<string | null> => {
+    if (savedItineraryId) return savedItineraryId;
+    const res = await fetch("/api/itineraries", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: plan.theme,
+        wizardData: data,
+        days,
+        reasons: plan.reasons,
+        estimatedCost: plan.estimatedCost,
+        source: "ai",
+        isPublic: false,
+      }),
+    });
+    if (res.status === 401) {
+      return null; // 由 caller 處理
+    }
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? `HTTP ${res.status}`);
+    }
+    const json = (await res.json()) as { itinerary: { id: string } };
+    setSavedItineraryId(json.itinerary.id);
+    return json.itinerary.id;
+  };
 
   const handleSave = async () => {
     setSaveState("saving");
     setSavedMsg("");
     try {
-      const res = await fetch("/api/itineraries", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: plan.theme,
-          wizardData: data,
-          days,
-          reasons: plan.reasons,
-          estimatedCost: plan.estimatedCost,
-          source: "ai",
-          isPublic: false,
-        }),
-      });
-      if (res.status === 401) {
+      const id = await ensureSaved();
+      if (!id) {
         setSaveState("idle");
         onLoginRequired("save");
         return;
-      }
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? `HTTP ${res.status}`);
       }
       setSaveState("saved");
       setSavedMsg("已儲存到「我的行程」");
@@ -1344,6 +1334,46 @@ function PlanDetailStateful({
       setSaveState("error");
       setSavedMsg(e instanceof Error ? e.message : "儲存失敗");
       setTimeout(() => setSaveState("idle"), 5000);
+    }
+  };
+
+  const handleShare = async () => {
+    setShareState("working");
+    setShareMsg("");
+    try {
+      const id = await ensureSaved();
+      if (!id) {
+        setShareState("idle");
+        onLoginRequired("share");
+        return;
+      }
+      const res = await fetch(`/api/itineraries/${id}/publish`, { method: "POST" });
+      if (res.status === 401) {
+        setShareState("idle");
+        onLoginRequired("share");
+        return;
+      }
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
+      const { slug } = (await res.json()) as { slug: string; url: string };
+      const fullUrl = `${window.location.origin}/i/${slug}`;
+      try {
+        await navigator.clipboard.writeText(fullUrl);
+        setShareState("copied");
+        setShareMsg(`分享連結已複製: ${fullUrl}`);
+      } catch {
+        // clipboard 失敗 fallback: prompt 讓用戶手動複製
+        window.prompt("複製這個分享連結:", fullUrl);
+        setShareState("copied");
+        setShareMsg(`連結: ${fullUrl}`);
+      }
+      setTimeout(() => setShareState("idle"), 5000);
+    } catch (e) {
+      setShareState("error");
+      setShareMsg(e instanceof Error ? e.message : "分享失敗");
+      setTimeout(() => setShareState("idle"), 5000);
     }
   };
 
@@ -1359,10 +1389,26 @@ function PlanDetailStateful({
             <CalendarPlus size={13} /> 加到行事曆
           </button>
           <button
-            onClick={() => onLoginRequired("share")}
-            className="flex items-center gap-1.5 rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-50"
+            onClick={handleShare}
+            disabled={shareState === "working"}
+            className={cx(
+              "flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition",
+              shareState === "copied"
+                ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                : shareState === "error"
+                  ? "border-rose-300 bg-rose-50 text-rose-700"
+                  : "border-stone-300 bg-white text-stone-700 hover:bg-stone-50",
+              shareState === "working" && "opacity-60 cursor-wait"
+            )}
           >
-            <Share2 size={13} /> 分享
+            {shareState === "copied" ? <Check size={13} /> : <Share2 size={13} />}
+            {shareState === "working"
+              ? "產生連結中..."
+              : shareState === "copied"
+                ? "已複製"
+                : shareState === "error"
+                  ? "✗ 失敗"
+                  : "分享"}
           </button>
           <button
             onClick={handleSave}
@@ -1389,6 +1435,15 @@ function PlanDetailStateful({
           saveState === "error" ? "bg-rose-50 text-rose-900 border border-rose-200" : "bg-emerald-50 text-emerald-900 border border-emerald-200"
         )}>
           {savedMsg}
+        </div>
+      )}
+
+      {shareMsg && (
+        <div className={cx(
+          "mb-3 break-all rounded-lg px-3 py-2 text-xs",
+          shareState === "error" ? "bg-rose-50 text-rose-900 border border-rose-200" : "bg-emerald-50 text-emerald-900 border border-emerald-200"
+        )}>
+          {shareMsg}
         </div>
       )}
 

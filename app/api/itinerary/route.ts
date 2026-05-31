@@ -139,6 +139,9 @@ async function filterCandidates(d: WizardData): Promise<Poi[]> {
     }
   }
 
+  // v1.6: 我們只規劃景點, 不規劃餐廳 → 候選池過濾掉 restaurant
+  candidates = candidates.filter((p) => p.category !== "restaurant");
+
   // Cap to top 80 by likes to keep Claude prompt short
   candidates.sort((a, b) => b.likes - a.likes);
   if (candidates.length > 80) candidates = candidates.slice(0, 80);
@@ -147,51 +150,42 @@ async function filterCandidates(d: WizardData): Promise<Poi[]> {
 }
 
 const numDays = (d: Duration) => (d === "d3n2" ? 3 : d === "d2n1" ? 2 : 1);
-const slotsPerDay = (d: Duration) => (d === "half" ? 3 : 5);
 
-// 計算每天 stops 範圍 (景點數 + 餐點)。intensity 主要控制「景點」, 用餐固定 1-3 個.
+// 計算每天 stops 範圍 (純景點, v1.6 起不排餐廳).
 function stopRange(duration: Duration, intensity: Intensity = "auto"): { min: number; max: number } {
   const isHalf = duration === "half";
-  // attractions per day (excluding meals)
-  const attrRange = {
-    chill:    isHalf ? { min: 1, max: 2 } : { min: 1, max: 2 },
-    standard: isHalf ? { min: 2, max: 3 } : { min: 3, max: 3 },
-    packed:   isHalf ? { min: 3, max: 4 } : { min: 4, max: 5 },
-    auto:     isHalf ? { min: 2, max: 3 } : { min: 2, max: 4 },
-  }[intensity];
-  // meals per day: half=1-2, full=2-3
-  const mealMin = isHalf ? 1 : 2;
-  const mealMax = isHalf ? 2 : 3;
   return {
-    min: attrRange.min + mealMin,
-    max: attrRange.max + mealMax,
-  };
+    chill:    isHalf ? { min: 2, max: 3 } : { min: 2, max: 3 },
+    standard: isHalf ? { min: 3, max: 3 } : { min: 3, max: 4 },
+    packed:   isHalf ? { min: 3, max: 4 } : { min: 4, max: 5 },
+    auto:     isHalf ? { min: 2, max: 3 } : { min: 3, max: 5 },
+  }[intensity];
 }
 
 const INTENSITY_LABEL: Record<Intensity, string> = {
-  chill: "輕鬆 (1-2 個景點)",
-  standard: "標準 (3 個景點)",
-  packed: "充實 (4+ 個景點)",
+  chill: "輕鬆 (2-3 個景點)",
+  standard: "標準 (3-4 個景點)",
+  packed: "充實 (4-5 個景點)",
   auto: "AI 自己決定",
 };
-const SLOT_FULL = ["早午餐", "上午景點", "點心 / 午茶", "下午景點", "晚餐"];
-const SLOT_HALF = ["早午餐", "景點", "點心"];
+const SLOT_FULL = ["上午", "中午", "下午", "傍晚", "晚上"];
+const SLOT_HALF = ["上午", "中午", "下午"];
 
 // ────────────────────────────────────────────────────────────────────
 // Claude tool schema (forces structured output)
 // ────────────────────────────────────────────────────────────────────
 
 const itineraryTool = {
-  name: "create_three_plans",
-  description: "Generate exactly 3 distinct family-trip itinerary plans from the candidate POIs.",
+  name: "create_plans",
+  description: "Generate 1-2 distinct family-trip itinerary plans from the candidate POIs.",
   input_schema: {
     type: "object" as const,
     properties: {
       plans: {
         type: "array",
         minItems: 1,
-        maxItems: 3,
-        description: "1-3 distinct plans. Prefer 3 but if you cannot produce 3 meaningfully different plans (e.g. small candidate pool, all flavors converge), return fewer. Order by badge_type: balanced, budget, premium",
+        maxItems: 2,
+        description: "1-2 distinct plans. Prefer 2 but if you cannot produce 2 meaningfully different plans (e.g. tiny candidate pool, all flavors converge), return 1. Order by badge_type: balanced first, then a contrast plan (budget or premium).",
         items: {
           type: "object",
           required: ["theme", "description", "badge_type", "days"],
@@ -292,8 +286,6 @@ export async function POST(req: Request) {
   const intensityLabel = INTENSITY_LABEL[intensity];
   const vibesStr = d.vibes.map((v) => VIBE_LABEL[v] ?? v).join("、") || "(無偏好)";
   const needsStr = d.needs.length > 0 ? d.needs.join("、") : "無";
-  const mealLabelMap: Record<string, string> = { brunch: "早午餐", snack: "下午點心", dinner: "晚餐" };
-  const mealsStr = d.meals.length > 0 ? d.meals.map((m) => mealLabelMap[m] ?? m).join("、") : "都不用排";
   const dateStr = { today: "今天", tomorrow: "明天", this_weekend: "這週末", next_weekend: "下週末" }[d.date];
   const BUDGET_LABELS = {
     low: "<2,000", mid: "2,000-5,000", high: "5,000-10,000",
@@ -301,7 +293,7 @@ export async function POST(req: Request) {
   } as const;
   const budgetStr = BUDGET_LABELS[d.budget as keyof typeof BUDGET_LABELS] ?? d.budget;
 
-  const systemPrompt = `你是台灣親子行程規劃師, 幫忙產出 3 個風格不同的一日/多日行程方案.
+  const systemPrompt = `你是台灣親子行程規劃師, 幫忙產出 2 個風格不同的一日/多日行程方案.
 
 ## 嚴格規則 (違反一律 reject)
 1. **只能從 candidate POI list 選 poi_id**, 絕對不可以編造不存在的 id
@@ -312,27 +304,25 @@ export async function POST(req: Request) {
      - 看到 \`poi_daanforest\` 寫 \`poi_daanforest\` (不要寫成 seed_daanforest)
    - 寫前**目視對照**候選 list 中的精確字串
 2. 每天 ${minStops}-${perDay} 個 stops (用戶活動量偏好: ${intensityLabel})
-   - 順序依時間: ${slotNames.join(" → ")} (用戶有勾的餐點 + 景點交錯)
+   - 順序依時間: ${slotNames.join(" → ")} 各時段安排一個景點
    - 用戶選的活動量是**硬性偏好**, 即使候選池夠也不要超過上限
    - 候選池小或寧缺勿濫時, 可少到 ${minStops} 個 stops, **不要硬塞重複 POI**
-3. category=restaurant 放在用戶要的餐點 slots, 其他類別放景點 slot
-   - 用戶會在 user message 寫明「要排的餐點」, 你必須**每餐排 1 個 restaurant**
-   - 用戶沒勾的餐點就不排
-4. **同一天內不能重複用同一個 POI** (例如不能把龍潭大池排在早餐又排在晚餐, 走兩次)
+3. **此版本只規劃景點, 完全不排餐廳** (候選池已過濾掉 category=restaurant)
+   - 用戶會自己決定去哪吃, 你不用安排
+4. **同一天內不能重複用同一個 POI** (例如不能把龍潭大池排在上午又排在下午, 走兩次)
 5. 不同天的同一個 plan 內可以再去同一個 POI, 但盡量避免
-5. 一個 plan 內的 POI 地理距離要合理 (參考 district 欄位)
-6. POI 年齡範圍要涵蓋小孩年齡
+6. 一個 plan 內的 POI 地理距離要合理 (參考 district 欄位)
+7. POI 年齡範圍要涵蓋小孩年齡
 
 ## 多樣性硬性要求 (重要)
-- 3 個方案之間**至少要有 2 個 POI 不同**, 否則不算「不同方案」
-- 如果候選池太小, 或「最符合 vibe」剛好就是「最便宜」(常見 case), **誠實只回 1-2 個方案**
-- 寧可給 1 個高品質方案, 不要硬塞 3 個重複的
+- 2 個方案之間**至少要有 1 個 POI 不同**, 否則不算「不同方案」
+- 如果候選池太小, 或「最符合 vibe」剛好就是「最便宜」(常見 case), **誠實只回 1 個方案**
+- 寧可給 1 個高品質方案, 不要硬塞 2 個重複的
 - 用戶看到重複會覺得 app 廢, 看到「我只找到 1 個有意義不同方案」反而會信任
 
-## 3 個方案的差異化 (如果候選夠多)
-- **balanced**: 最貼合用戶選的 vibes, 預算落在中段
-- **budget**: 多選免費或便宜場館, 預算優先 (若 balanced 已經是免費的, 就跳過此方案)
-- **premium**: 高評價 (likes 高) 或精緻場館, 體驗最完整
+## 2 個方案的差異化
+- **第一個 (balanced)**: 最貼合用戶選的 vibes, 預算落在中段
+- **第二個 (對比版)**: 視情況選 budget (多選免費/便宜場館) 或 premium (高評價/精緻場館). 跟 balanced 在「氛圍/預算/強度」其中一軸有明顯對比
 
 ## reason 撰寫要求
 不要寫泛泛的話 (如「適合小孩」). 要具體, 例如:
@@ -340,13 +330,12 @@ export async function POST(req: Request) {
 - ✅ 「6 歲已能爬完所有遊戲設施, 室內有遊戲區放電」
 - ✅ 「公園免費, 旁邊有捷運站, 大人可以坐著休息」
 
-務必呼叫 create_three_plans 工具回傳結果, 不要用純文字.`;
+務必呼叫 create_plans 工具回傳結果, 不要用純文字.`;
 
   const userPrompt = `# 這個家庭
 
 - ${d.kids === 0 ? `大人 ${d.adults} 人 (無小孩, 適合成人/情侶/長輩)` : `大人 ${d.adults} 人, 小孩 ${d.kids} 個 (${d.kidAges.join(",")} 歲)`}
 - ${dateStr}出遊, 走 ${days} 天, 每天 ${minStops}-${perDay} 站 (活動量: ${intensityLabel})
-- 要排的餐點: ${mealsStr} (每餐用 1 個 restaurant POI, 必須符合用戶選的 meals)
 - 從 ${d.startArea} 出發
 - 偏好氛圍: ${vibesStr}
 - 特殊需求: ${needsStr}
@@ -354,11 +343,11 @@ export async function POST(req: Request) {
 ${d.notes ? `- 補充說明: ${d.notes}` : ""}
 ${d.destMode === "specific" ? `- 想去的地方: ${d.destAreas.join("、")}` : "- 目的地不限, 你決定最合適"}
 
-# 可選 POI 池 (共 ${candidates.length} 筆)
+# 可選 POI 池 (共 ${candidates.length} 筆, 純景點不含餐廳)
 
 ${JSON.stringify(candidateJson, null, 1)}
 
-請呼叫 create_three_plans 工具產生 3 個方案.`;
+請呼叫 create_plans 工具產生 2 個方案 (若候選不夠多樣可只回 1 個).`;
 
   const client = new Anthropic({
     apiKey: process.env.CHILDTRIP_ANTHROPIC_KEY,
@@ -380,7 +369,7 @@ ${JSON.stringify(candidateJson, null, 1)}
       ],
       messages,
       tools: [itineraryTool as Anthropic.Tool],
-      tool_choice: { type: "tool", name: "create_three_plans" },
+      tool_choice: { type: "tool", name: "create_plans" },
     });
 
   const extractToolUse = (resp: Anthropic.Message) => {
@@ -456,7 +445,7 @@ ${JSON.stringify(candidateJson, null, 1)}
 
 清單中正確的 id 例如: ${validExamples}.
 
-重新呼叫 create_three_plans, 確保每個 poi_id 都精確等於候選清單中某筆的 id.`;
+重新呼叫 create_plans, 確保每個 poi_id 都精確等於候選清單中某筆的 id.`;
 
     try {
       response = await callClaude([

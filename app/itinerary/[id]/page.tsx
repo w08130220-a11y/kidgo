@@ -5,7 +5,7 @@ import { Nav } from "@/components/Nav";
 import { getItinerary, categoryMeta } from "@/lib/mock-data";
 import { getPoisByIds } from "@/lib/poi-queries";
 
-const SLOT_LABELS = ["早午餐", "上午景點", "點心 / 午茶", "下午景點", "晚餐"];
+const SLOT_LABELS = ["上午", "中午", "下午", "傍晚", "晚上"];
 
 export default async function ItineraryDetailPage({
   params,
