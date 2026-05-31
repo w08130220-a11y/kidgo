@@ -77,7 +77,7 @@ export default async function Home() {
             </p>
           </div>
           <Link
-            href="/discover"
+            href="/poi"
             className="hidden text-sm font-medium text-orange-600 hover:text-orange-700 sm:inline"
           >
             看全部 →
@@ -185,10 +185,10 @@ export default async function Home() {
               知道一個還沒上的好地方？
             </p>
             <p className="mt-1 text-xs text-stone-500">
-              上傳並通過審核 +10 積分．每被按一個讚 +1 積分
+              幫其他爸媽補上系統還沒收的好景點．通過審核後全站可見
             </p>
             <Link
-              href="/upload"
+              href="/poi/new"
               className="mt-3 inline-block rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-stone-50 hover:bg-stone-700"
             >
               + 推薦一個景點
@@ -281,7 +281,7 @@ export default async function Home() {
             <div className="flex gap-4">
               <Link href="/privacy" className="hover:text-stone-900">隱私政策</Link>
               <Link href="/terms" className="hover:text-stone-900">服務條款</Link>
-              <Link href="/feedback" className="hover:text-stone-900">給我們建議</Link>
+              <a href="mailto:w13081308@gmail.com" className="hover:text-stone-900">給我們建議</a>
             </div>
           </div>
         </div>

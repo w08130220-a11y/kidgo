@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Compass, Sparkles, Trophy, User, Bookmark, LogOut } from "lucide-react";
+import { Compass, Sparkles, User, Bookmark, LogOut, Plus } from "lucide-react";
 import { createServerClient } from "@/lib/supabase/server";
 
 export async function Nav() {
@@ -47,10 +47,10 @@ export async function Nav() {
             <Sparkles size={16} /> AI 規劃
           </Link>
           <Link
-            href="/leaderboard"
+            href="/poi/new"
             className="hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-stone-700 transition hover:bg-stone-200/60 sm:flex"
           >
-            <Trophy size={16} /> 排行
+            <Plus size={16} /> 新增景點
           </Link>
 
           {user ? (
