@@ -941,16 +941,6 @@ function Step4MealsNeeds({
         </div>
       </Field>
 
-      <Field icon={<Sparkles size={18} />} label="還有什麼想補充 (可跳過)">
-        <textarea
-          value={data.notes}
-          onChange={(e) => update("notes", e.target.value)}
-          placeholder="例如：哥哥不愛動物 / 媽媽腳受傷不能走太多 / 想拍照打卡的點"
-          rows={3}
-          className="w-full rounded-xl border border-stone-300 bg-white p-3 text-sm outline-none transition focus:border-orange-400"
-        />
-      </Field>
-
     </div>
   );
 }
