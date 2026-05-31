@@ -29,7 +29,7 @@ export default async function Home() {
       <section className="relative overflow-hidden border-b border-stone-200 bg-gradient-to-b from-orange-50 via-stone-50 to-stone-50">
         <div className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6 sm:py-24">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-orange-200 bg-white px-3 py-1 text-xs font-medium text-orange-700">
-            <Sparkles size={12} /> 全台 22 縣市 ・ 完全免費 ・ AI 即時規劃
+            <Sparkles size={12} /> 全台 22 縣市 ・ AI 即時規劃
           </span>
           <h1 className="mt-6 text-4xl font-extrabold leading-tight tracking-tight text-stone-900 sm:text-6xl">
             全台親子行程，<br className="sm:hidden" />
@@ -42,24 +42,15 @@ export default async function Home() {
           </p>
 
           {/* CTA */}
-          <div className="mx-auto mt-8 max-w-2xl">
+          <div className="mx-auto mt-8 flex flex-col items-center">
             <Link
               href="/chat"
-              className="group flex items-center gap-3 rounded-2xl border border-stone-300 bg-white p-4 text-left shadow-sm transition hover:border-orange-400 hover:shadow-md"
+              className="inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-7 py-3.5 text-base font-semibold text-white shadow-md transition hover:bg-orange-600 hover:shadow-lg sm:text-lg"
             >
-              <Sparkles className="shrink-0 text-orange-500" size={22} />
-              <span className="flex-1 text-stone-500">
-                試試：「6 歲男生 想戶外 預算 3000 不過夜」
-              </span>
-              <span className="hidden shrink-0 items-center gap-1 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition group-hover:bg-orange-600 sm:flex">
-                開始規劃 <ArrowRight size={16} />
-              </span>
-              <span className="flex shrink-0 sm:hidden">
-                <ArrowRight size={20} className="text-orange-500" />
-              </span>
+              <Sparkles size={20} /> 開始規劃 <ArrowRight size={18} />
             </Link>
-            <p className="mt-3 text-xs text-stone-500">
-              全台 22 縣市 100+ 親子場館．AI 不會給你不存在的景點．30 秒完成
+            <p className="mt-4 text-xs text-stone-500">
+              全台 22 縣市 {totalCount.toLocaleString()}+ 親子場館．AI 不會給你不存在的景點．30 秒完成
             </p>
           </div>
         </div>

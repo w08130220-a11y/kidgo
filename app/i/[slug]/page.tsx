@@ -12,8 +12,10 @@ import { getPoisByIds } from "@/lib/poi-queries";
 import { categoryMeta } from "@/lib/mock-data";
 import { ShareButtonClient } from "./ShareButtonClient";
 import { LikeButton } from "@/components/LikeButton";
+import { BookmarkButton } from "@/components/BookmarkButton";
 import { CommentSection } from "@/components/CommentSection";
 import { isLikedByUser } from "@/lib/like-queries";
+import { isBookmarkedByUser } from "@/lib/bookmark-queries";
 
 const SLOT_LABELS_FULL = ["上午", "中午", "下午", "傍晚", "晚上"];
 const SLOT_LABELS_HALF = ["上午", "中午", "下午"];
@@ -77,7 +79,10 @@ export default async function SharedItineraryPage({ params }: { params: Params }
     | { display_name?: string; avatar_url?: string }
     | null;
 
-  const userLiked = await isLikedByUser("itinerary", itinerary.id);
+  const [userLiked, userBookmarked] = await Promise.all([
+    isLikedByUser("itinerary", itinerary.id),
+    isBookmarkedByUser("itinerary", itinerary.id),
+  ]);
 
   return (
     <>
@@ -137,6 +142,11 @@ export default async function SharedItineraryPage({ params }: { params: Params }
             >
               <Bookmark size={16} /> 複製成我的
             </Link>
+            <BookmarkButton
+              targetType="itinerary"
+              targetId={itinerary.id}
+              initialBookmarked={userBookmarked}
+            />
             <LikeButton
               targetType="itinerary"
               targetId={itinerary.id}

@@ -29,7 +29,8 @@ service_role key     SUPABASE_SERVICE_ROLE_KEY  ⚠ 機密
 2. 把 `supabase/migrations/0001_init.sql` 全部貼上 → Run
 3. 再貼 `0002_rls.sql` → Run
 4. 再貼 `0003_likes_triggers.sql` → Run (按讚自動同步計數)
-5. 成功後 Tables 應該看得到 pois / profiles / itineraries / likes / comments / user_points / point_events
+5. 再貼 `0004_bookmarks.sql` → Run (想去清單 bookmarks table)
+6. 成功後 Tables 應該看得到 pois / profiles / itineraries / likes / comments / user_points / point_events / bookmarks
 
 **B. Supabase CLI (之後改 schema 用)**
 ```bash

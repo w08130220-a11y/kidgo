@@ -105,6 +105,12 @@ function UserMenu({ user }: { user: { email?: string; name?: string; avatar?: st
           <Bookmark size={14} /> 我的行程
         </Link>
         <Link
+          href="/me/bookmarks"
+          className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-stone-700 hover:bg-stone-100"
+        >
+          <Bookmark size={14} className="fill-amber-400 text-amber-500" /> 想去清單
+        </Link>
+        <Link
           href="/me/likes"
           className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-stone-700 hover:bg-stone-100"
         >

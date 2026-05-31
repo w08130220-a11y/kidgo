@@ -4,10 +4,12 @@ import { ArrowLeft, MapPin, Clock, Wallet, Sparkles } from "lucide-react";
 import { Nav } from "@/components/Nav";
 import { PoiImage } from "@/components/PoiImage";
 import { LikeButton } from "@/components/LikeButton";
+import { BookmarkButton } from "@/components/BookmarkButton";
 import { CommentSection } from "@/components/CommentSection";
 import { categoryMeta } from "@/lib/mock-data";
 import { getPoiById } from "@/lib/poi-queries";
 import { isLikedByUser } from "@/lib/like-queries";
+import { isBookmarkedByUser } from "@/lib/bookmark-queries";
 
 export default async function PoiDetailPage({
   params,
@@ -20,7 +22,10 @@ export default async function PoiDetailPage({
 
   const meta = categoryMeta(poi.category);
   const isFree = poi.priceMin === 0 && poi.priceMax === 0;
-  const userLiked = await isLikedByUser("poi", poi.id);
+  const [userLiked, userBookmarked] = await Promise.all([
+    isLikedByUser("poi", poi.id),
+    isBookmarkedByUser("poi", poi.id),
+  ]);
 
   return (
     <>
@@ -103,6 +108,11 @@ export default async function PoiDetailPage({
           >
             <Sparkles size={16} /> 加進 AI 行程
           </Link>
+          <BookmarkButton
+            targetType="poi"
+            targetId={poi.id}
+            initialBookmarked={userBookmarked}
+          />
           <LikeButton
             targetType="poi"
             targetId={poi.id}
