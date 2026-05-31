@@ -4,13 +4,15 @@
  */
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Calendar, Eye, Heart, Wallet, Sparkles, Bookmark } from "lucide-react";
+import { ArrowLeft, Calendar, Eye, Wallet, Sparkles, Bookmark } from "lucide-react";
 import { Nav } from "@/components/Nav";
 import { PoiImage } from "@/components/PoiImage";
 import { createServerClient } from "@/lib/supabase/server";
 import { getPoisByIds } from "@/lib/poi-queries";
 import { categoryMeta } from "@/lib/mock-data";
 import { ShareButtonClient } from "./ShareButtonClient";
+import { LikeButton } from "@/components/LikeButton";
+import { isLikedByUser } from "@/lib/like-queries";
 
 const SLOT_LABELS_FULL = ["上午", "中午", "下午", "傍晚", "晚上"];
 const SLOT_LABELS_HALF = ["上午", "中午", "下午"];
@@ -74,6 +76,8 @@ export default async function SharedItineraryPage({ params }: { params: Params }
     | { display_name?: string; avatar_url?: string }
     | null;
 
+  const userLiked = await isLikedByUser("itinerary", itinerary.id);
+
   return (
     <>
       <Nav />
@@ -123,18 +127,21 @@ export default async function SharedItineraryPage({ params }: { params: Params }
             <span className="inline-flex items-center gap-1">
               <Eye size={14} /> {(itinerary.view_count ?? 0).toLocaleString()} 看過
             </span>
-            <span className="inline-flex items-center gap-1">
-              <Heart size={14} className="fill-rose-400 text-rose-400" /> {itinerary.like_count ?? 0}
-            </span>
           </div>
 
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
             <Link
               href={`/chat?ref=${itinerary.id}`}
               className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-600"
             >
               <Bookmark size={16} /> 複製成我的
             </Link>
+            <LikeButton
+              targetType="itinerary"
+              targetId={itinerary.id}
+              initialLiked={userLiked}
+              initialCount={itinerary.like_count ?? 0}
+            />
             <ShareButtonClient slug={slug} />
           </div>
         </div>

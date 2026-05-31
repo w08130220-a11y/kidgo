@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Heart, MapPin, Clock, Wallet, Sparkles, Bookmark } from "lucide-react";
+import { ArrowLeft, MapPin, Clock, Wallet, Sparkles, Bookmark } from "lucide-react";
 import { Nav } from "@/components/Nav";
 import { PoiImage } from "@/components/PoiImage";
+import { LikeButton } from "@/components/LikeButton";
 import { categoryMeta } from "@/lib/mock-data";
 import { getPoiById } from "@/lib/poi-queries";
+import { isLikedByUser } from "@/lib/like-queries";
 
 export default async function PoiDetailPage({
   params,
@@ -17,6 +19,7 @@ export default async function PoiDetailPage({
 
   const meta = categoryMeta(poi.category);
   const isFree = poi.priceMin === 0 && poi.priceMax === 0;
+  const userLiked = await isLikedByUser("poi", poi.id);
 
   return (
     <>
@@ -102,9 +105,12 @@ export default async function PoiDetailPage({
           <button className="flex items-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm font-medium text-stone-700 hover:bg-stone-50">
             <Bookmark size={16} />
           </button>
-          <button className="flex items-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm font-medium text-stone-700 hover:bg-stone-50">
-            <Heart size={16} /> {poi.likes.toLocaleString()}
-          </button>
+          <LikeButton
+            targetType="poi"
+            targetId={poi.id}
+            initialLiked={userLiked}
+            initialCount={poi.likes}
+          />
         </div>
 
         <div className="mt-6 rounded-2xl border border-stone-200 bg-white p-5">

@@ -30,6 +30,7 @@ import {
   Map as MapIcon,
 } from "lucide-react";
 import { categoryMeta, type Poi } from "@/lib/mock-data";
+import { cx } from "@/lib/cx";
 
 // ────────────────────────────────────────────────────────────────────
 // Wizard data model
@@ -1827,6 +1828,3 @@ function summarizeData(d: WizardData): string {
   return parts.join(" ・ ");
 }
 
-function cx(...classes: (string | false | undefined | null)[]): string {
-  return classes.filter(Boolean).join(" ");
-}
