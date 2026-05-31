@@ -188,6 +188,9 @@ function scoreForUser(p: Poi, d: WizardData): number {
   // Baseline: likes 規範化到 0-1, 避免被需求分數蓋過
   s += Math.min((p.likes ?? 0) / 1000, 1);
 
+  // v1.8: 有照片的 +2 (沒照片的場館 UI 漸層 fallback 雖然 ok 但體驗略差)
+  if (p.photos && p.photos.length > 0) s += 2;
+
   // Vibes 強匹配 (+3 per match)
   for (const v of d.vibes) {
     const tags = VIBE_TO_TAGS[v] ?? [];

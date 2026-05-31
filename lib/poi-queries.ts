@@ -123,7 +123,9 @@ export async function getPois(opts: PoiQueryOpts = {}): Promise<Poi[]> {
   if (opts.age612) q = q.gte("age_max", 6);
 
   // Sort
+  // v1.8: 一律「有照片的優先」(沒照片視覺體驗差), 再按 user 選的 sort
   const sort = opts.sort ?? "likes";
+  q = q.order("has_photo", { ascending: false, nullsFirst: false });
   if (sort === "likes") q = q.order("like_count", { ascending: false });
   else if (sort === "recent") q = q.order("created_at", { ascending: false });
   else if (sort === "cheap") q = q.order("price_min", { ascending: true });
