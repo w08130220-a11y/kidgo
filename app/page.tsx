@@ -76,7 +76,7 @@ export default async function Home() {
               <Link
                 key={it.id}
                 href={`/itinerary/${it.id}`}
-                className="group flex w-[92%] shrink-0 snap-start flex-col gap-3 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:w-auto sm:shrink"
+                className="group flex w-[calc(100vw-2rem)] shrink-0 snap-start flex-col gap-3 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:w-auto sm:shrink"
               >
                 <div className="flex items-center gap-2 text-xs text-stone-500">
                   <span className="rounded-full bg-stone-100 px-2 py-0.5">
