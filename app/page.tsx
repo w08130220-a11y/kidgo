@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { Sparkles, Heart, Eye, Trophy, ArrowRight } from "lucide-react";
+import { Sparkles, Heart, Eye, ArrowRight } from "lucide-react";
 import { Nav } from "@/components/Nav";
 import { PoiCard } from "@/components/PoiCard";
-import { itineraries, topContributors } from "@/lib/mock-data";
+import { itineraries } from "@/lib/mock-data";
 import { getPois, getPoisByIds, countPois } from "@/lib/poi-queries";
 
 export const dynamic = "force-dynamic";
@@ -163,11 +163,9 @@ export default async function Home() {
             </Link>
           </div>
 
-          <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {featuredPois.map((poi) => (
-              <div key={poi.id} className="w-[80%] shrink-0 snap-start sm:w-auto sm:shrink">
-                <PoiCard poi={poi} />
-              </div>
+              <PoiCard key={poi.id} poi={poi} />
             ))}
           </div>
 
@@ -188,76 +186,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Top contributors */}
-      <section className="border-t border-stone-200">
-        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-          <div className="grid gap-8 lg:grid-cols-2">
-            <div>
-              <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-3xl">
-                <Trophy className="text-amber-500" size={28} />
-                本月貢獻王
-              </h2>
-              <p className="mt-1 text-sm text-stone-600">
-                上傳景點、被按讚都會累積積分。訂閱版上線後可折抵費用。
-              </p>
-              <ul className="mt-5 divide-y divide-stone-200 rounded-xl border border-stone-200 bg-white">
-                {topContributors.map((c, i) => (
-                  <li key={c.name} className="flex items-center gap-3 px-4 py-3">
-                    <span className="w-6 text-center text-sm font-bold text-stone-400">
-                      {i + 1}
-                    </span>
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-orange-200 to-amber-300 text-base">
-                      {c.badge || c.name.charAt(0)}
-                    </span>
-                    <span className="flex-1 font-medium text-stone-800">
-                      {c.name}
-                    </span>
-                    <span className="text-sm font-semibold text-orange-600">
-                      {c.points.toLocaleString()} 點
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="rounded-2xl border border-stone-200 bg-gradient-to-br from-amber-50 to-orange-50 p-6 sm:p-8">
-              <h3 className="text-lg font-bold">如何賺積分？</h3>
-              <ul className="mt-4 space-y-3 text-sm text-stone-700">
-                <li className="flex items-start gap-3">
-                  <span className="mt-0.5 inline-block min-w-[60px] rounded-md bg-emerald-100 px-2 py-0.5 text-center text-xs font-bold text-emerald-700">
-                    +10
-                  </span>
-                  <span>推薦的景點通過審核</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="mt-0.5 inline-block min-w-[60px] rounded-md bg-emerald-100 px-2 py-0.5 text-center text-xs font-bold text-emerald-700">
-                    +5
-                  </span>
-                  <span>分享的行程被別人收藏</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="mt-0.5 inline-block min-w-[60px] rounded-md bg-emerald-100 px-2 py-0.5 text-center text-xs font-bold text-emerald-700">
-                    +1
-                  </span>
-                  <span>你貢獻的內容被按一個讚</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="mt-0.5 inline-block min-w-[60px] rounded-md bg-emerald-100 px-2 py-0.5 text-center text-xs font-bold text-emerald-700">
-                    +20
-                  </span>
-                  <span>邀請朋友註冊成功</span>
-                </li>
-              </ul>
-              <div className="mt-6 rounded-xl border border-amber-200 bg-white/70 p-3 text-xs leading-relaxed text-stone-600">
-                <strong className="text-stone-900">即將推出：</strong>
-                訂閱版上線後，100 點 = NT$10 折抵。
-                <br />
-                v1 期間每一點都會幫你存著。
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* 本月貢獻王 + 賺積分 — 暫時隱藏 (積分系統 v1 未實作, schema 已預留) */}
 
       {/* Footer */}
       <footer className="mt-auto border-t border-stone-200 bg-white">
