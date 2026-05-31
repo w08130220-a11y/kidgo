@@ -142,11 +142,82 @@ async function filterCandidates(d: WizardData): Promise<Poi[]> {
   // v1.6: 我們只規劃景點, 不規劃餐廳 → 候選池過濾掉 restaurant
   candidates = candidates.filter((p) => p.category !== "restaurant");
 
-  // Cap to top 80 by likes to keep Claude prompt short
-  candidates.sort((a, b) => b.likes - a.likes);
-  if (candidates.length > 80) candidates = candidates.slice(0, 80);
+  // v1.7: 智慧前篩 — 按用戶 vibes/needs/budget 評分排序, 取 top 40
+  // 不再單純按 likes 排序, 因為 likes 高 ≠ 符合用戶需求
+  candidates.sort((a, b) => scoreForUser(b, d) - scoreForUser(a, d));
+  if (candidates.length > 40) candidates = candidates.slice(0, 40);
 
   return candidates;
+}
+
+// ────────────────────────────────────────────────────────────────────
+// v1.7 智慧前篩: 給每筆 POI 按用戶需求打分數
+// ────────────────────────────────────────────────────────────────────
+
+// vibe → 直接對應的 tags (在 POI 的 parentingTags 裡)
+const VIBE_TO_TAGS: Record<string, string[]> = {
+  outdoor: ["戶外"],
+  indoor: ["室內", "室內外"],
+  animals: ["動物互動"],
+  learning: [], // 走 category
+  food: [],     // restaurant 已排除, 無對應
+  energy: ["有遊戲區", "玩水"],
+};
+
+// vibe → 直接對應的 category
+const VIBE_TO_CATEGORIES: Record<string, string[]> = {
+  learning: ["museum"],
+  animals: ["zoo"],
+  energy: ["amusement", "indoor"],
+  outdoor: ["park"],
+  indoor: ["museum", "indoor", "amusement"],
+};
+
+// needs → 對應的 tags
+const NEED_TO_TAGS: Record<string, string[]> = {
+  stroller: ["推車友善"],
+  rainy: ["雨天首選", "雨天備案", "室內"],
+  metro: ["捷運直達"],
+  // accessible / no_crowd: 目前 tag 系統沒對應, 跳過
+};
+
+function scoreForUser(p: Poi, d: WizardData): number {
+  let s = 0;
+
+  // Baseline: likes 規範化到 0-1, 避免被需求分數蓋過
+  s += Math.min((p.likes ?? 0) / 1000, 1);
+
+  // Vibes 強匹配 (+3 per match)
+  for (const v of d.vibes) {
+    const tags = VIBE_TO_TAGS[v] ?? [];
+    if (tags.some((t) => p.tags.includes(t))) s += 3;
+    const cats = VIBE_TO_CATEGORIES[v] ?? [];
+    if (cats.includes(p.category)) s += 3;
+  }
+
+  // Needs 中度匹配 (+2 per match)
+  for (const n of d.needs) {
+    const tags = NEED_TO_TAGS[n] ?? [];
+    if (tags.some((t) => p.tags.includes(t))) s += 2;
+  }
+
+  // Budget 偏好
+  if (d.budget === "low") {
+    if (p.priceMin === 0 && p.priceMax === 0) s += 2; // 完全免費
+    else if (p.priceMin < 200) s += 1;
+  } else if (d.budget === "mid") {
+    if (p.priceMin >= 0 && p.priceMin <= 500) s += 0.5;
+  }
+  // high / premium / none: 不加減
+
+  // 年齡精準匹配加分 (有小孩時, 年齡剛好涵蓋)
+  if (d.kidAges.length > 0) {
+    const minAge = Math.min(...d.kidAges);
+    const maxAge = Math.max(...d.kidAges);
+    if (p.ageMin <= minAge && p.ageMax >= maxAge) s += 1;
+  }
+
+  return s;
 }
 
 const numDays = (d: Duration) => (d === "d3n2" ? 3 : d === "d2n1" ? 2 : 1);
@@ -298,39 +369,30 @@ export async function POST(req: Request) {
 ## 嚴格規則 (違反一律 reject)
 1. **只能從 candidate POI list 選 poi_id**, 絕對不可以編造不存在的 id
    - poi_id 必須**逐字複製**自候選 list 的 \`id\` 欄位 (character-by-character copy)
-   - 候選 list 內 id 形如 \`poi_xxx\`, \`seed_tp_xxx\`, \`seed_ty_xxx\`, \`seed_nt_xxx\` 等
    - **每個字母都不能改**. 例如:
-     - 看到 \`seed_ty_daxi\` 寫 \`seed_ty_daxi\` (不要寫成 seed_yt_daxi 或 seed_t_daxi)
+     - 看到 \`seed_ty_daxi\` 寫 \`seed_ty_daxi\` (不要寫成 seed_yt_daxi)
      - 看到 \`poi_daanforest\` 寫 \`poi_daanforest\` (不要寫成 seed_daanforest)
    - 寫前**目視對照**候選 list 中的精確字串
 2. 每天 ${minStops}-${perDay} 個 stops (用戶活動量偏好: ${intensityLabel})
    - 順序依時間: ${slotNames.join(" → ")} 各時段安排一個景點
-   - 用戶選的活動量是**硬性偏好**, 即使候選池夠也不要超過上限
+   - 用戶選的活動量是硬性偏好, 即使候選池夠也不要超過上限
    - 候選池小或寧缺勿濫時, 可少到 ${minStops} 個 stops, **不要硬塞重複 POI**
 3. **此版本只規劃景點, 完全不排餐廳** (候選池已過濾掉 category=restaurant)
-   - 用戶會自己決定去哪吃, 你不用安排
-4. **同一天內不能重複用同一個 POI** (例如不能把龍潭大池排在上午又排在下午, 走兩次)
-5. 不同天的同一個 plan 內可以再去同一個 POI, 但盡量避免
-6. 一個 plan 內的 POI 地理距離要合理 (參考 district 欄位)
-7. POI 年齡範圍要涵蓋小孩年齡
+4. **同一天內不能重複用同一個 POI**
+5. 一個 plan 內的 POI 地理距離要合理 (參考 district 欄位)
+6. POI 年齡範圍要涵蓋小孩年齡
 
-## 多樣性硬性要求 (重要)
-- 2 個方案之間**至少要有 1 個 POI 不同**, 否則不算「不同方案」
-- 如果候選池太小, 或「最符合 vibe」剛好就是「最便宜」(常見 case), **誠實只回 1 個方案**
-- 寧可給 1 個高品質方案, 不要硬塞 2 個重複的
-- 用戶看到重複會覺得 app 廢, 看到「我只找到 1 個有意義不同方案」反而會信任
+## 多樣性要求
+- 2 個方案之間**至少要有 1 個 POI 不同**
+- 如果候選池太小, 誠實只回 1 個方案, 寧缺勿濫
+- 第一個 balanced (最貼合 vibes), 第二個 budget 或 premium 對比
 
-## 2 個方案的差異化
-- **第一個 (balanced)**: 最貼合用戶選的 vibes, 預算落在中段
-- **第二個 (對比版)**: 視情況選 budget (多選免費/便宜場館) 或 premium (高評價/精緻場館). 跟 balanced 在「氛圍/預算/強度」其中一軸有明顯對比
-
-## reason 撰寫要求
-不要寫泛泛的話 (如「適合小孩」). 要具體, 例如:
-- ❌ 「適合小朋友玩」
+## reason 撰寫
+不要寫「適合小孩」這種泛泛的話, 要具體:
 - ✅ 「6 歲已能爬完所有遊戲設施, 室內有遊戲區放電」
-- ✅ 「公園免費, 旁邊有捷運站, 大人可以坐著休息」
+- ✅ 「公園免費, 旁邊有捷運站, 大人可坐著休息」
 
-務必呼叫 create_plans 工具回傳結果, 不要用純文字.`;
+務必呼叫 create_plans 工具回傳結果.`;
 
   const userPrompt = `# 這個家庭
 
@@ -360,13 +422,9 @@ ${JSON.stringify(candidateJson, null, 1)}
     client.messages.create({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 3000,
-      system: [
-        {
-          type: "text",
-          text: systemPrompt,
-          cache_control: { type: "ephemeral" },
-        },
-      ],
+      // v1.7: 不用 prompt cache. 因為 system prompt 含可變參數,
+      // 不同用戶 cache key 不同, 命中率 ~0, 反而吃 1.25x cache_write premium.
+      system: systemPrompt,
       messages,
       tools: [itineraryTool as Anthropic.Tool],
       tool_choice: { type: "tool", name: "create_plans" },
