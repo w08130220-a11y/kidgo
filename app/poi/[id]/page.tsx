@@ -4,6 +4,7 @@ import { ArrowLeft, MapPin, Clock, Wallet, Sparkles, Bookmark } from "lucide-rea
 import { Nav } from "@/components/Nav";
 import { PoiImage } from "@/components/PoiImage";
 import { LikeButton } from "@/components/LikeButton";
+import { CommentSection } from "@/components/CommentSection";
 import { categoryMeta } from "@/lib/mock-data";
 import { getPoiById } from "@/lib/poi-queries";
 import { isLikedByUser } from "@/lib/like-queries";
@@ -125,6 +126,8 @@ export default async function PoiDetailPage({
           <p className="mt-2 italic text-stone-700">「{poi.estimatedKid}」</p>
           <p className="mt-2 text-xs text-stone-500">— {poi.contributorName}</p>
         </div>
+
+        <CommentSection targetType="poi" targetId={poi.id} />
       </main>
     </>
   );

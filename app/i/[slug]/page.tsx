@@ -12,6 +12,7 @@ import { getPoisByIds } from "@/lib/poi-queries";
 import { categoryMeta } from "@/lib/mock-data";
 import { ShareButtonClient } from "./ShareButtonClient";
 import { LikeButton } from "@/components/LikeButton";
+import { CommentSection } from "@/components/CommentSection";
 import { isLikedByUser } from "@/lib/like-queries";
 
 const SLOT_LABELS_FULL = ["上午", "中午", "下午", "傍晚", "晚上"];
@@ -199,6 +200,8 @@ export default async function SharedItineraryPage({ params }: { params: Params }
             })
           )}
         </ol>
+
+        <CommentSection targetType="itinerary" targetId={itinerary.id} />
 
         {/* CTA bottom */}
         <div className="mt-8 rounded-2xl border border-orange-200 bg-orange-50 p-6 text-center">
