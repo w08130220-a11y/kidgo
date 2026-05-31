@@ -1523,13 +1523,6 @@ function DayTimeline({
 
               <p className="mt-1.5 text-sm text-stone-700">{p.description}</p>
 
-              {reasons?.[p.id] && (
-                <div className="mt-2 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs text-violet-900">
-                  <span className="font-semibold">✨ AI 為你選這裡：</span>
-                  {reasons[p.id]}
-                </div>
-              )}
-
               {p.phone && (
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <a

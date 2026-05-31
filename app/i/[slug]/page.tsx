@@ -199,12 +199,6 @@ export default async function SharedItineraryPage({ params }: { params: Params }
                       <p className="mt-2 line-clamp-2 text-sm text-stone-700">
                         {p.description}
                       </p>
-                      {reasons[p.id] && (
-                        <div className="mt-2 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs text-violet-900">
-                          <span className="font-semibold">✨ AI 為這家庭挑這裡：</span>
-                          {reasons[p.id]}
-                        </div>
-                      )}
                     </div>
                   </Link>
                 </li>
