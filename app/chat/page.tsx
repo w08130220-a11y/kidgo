@@ -29,7 +29,7 @@ import {
   Moon,
   Map as MapIcon,
 } from "lucide-react";
-import { pois, categoryMeta, type Poi } from "@/lib/mock-data";
+import { categoryMeta, type Poi } from "@/lib/mock-data";
 
 // ────────────────────────────────────────────────────────────────────
 // Wizard data model
@@ -110,6 +110,7 @@ export default function ChatPage() {
 
   const [rateLimit, setRateLimit] = useState<{ remaining: number; resetAt: number; blocked: boolean } | null>(null);
   const [loginPrompt, setLoginPrompt] = useState<null | "save" | "share" | "calendar">(null);
+  const [poiMap, setPoiMap] = useState<Map<string, Poi>>(new Map());
 
   const handleSubmit = async () => {
     setMode("results");
@@ -123,7 +124,6 @@ export default function ChatPage() {
         body: JSON.stringify(data),
       });
 
-      // Read rate limit headers regardless of status
       const remaining = parseInt(res.headers.get("X-RateLimit-Remaining") ?? "-1", 10);
       const resetAt = parseInt(res.headers.get("X-RateLimit-Reset") ?? "0", 10) * 1000;
       if (remaining >= 0) setRateLimit({ remaining, resetAt, blocked: res.status === 429 });
@@ -143,12 +143,17 @@ export default function ChatPage() {
       setGenerated(json.plans);
       setUsage(json.usage);
       setGenSource("ai");
+      // 把 server 給的 poi 完整資料存進 map (給 PlanDetail / swap 用)
+      const map = new Map<string, Poi>();
+      for (const [id, poi] of Object.entries(json.poiData ?? {})) {
+        map.set(id, poi as Poi);
+      }
+      setPoiMap(map);
     } catch (e) {
-      // Fallback to rule-based
       const msg = e instanceof Error ? e.message : String(e);
-      console.warn("AI generation failed, falling back to rule-based:", msg);
-      setAiError(msg);
-      setGenerated(generatePlans(data));
+      console.error("AI generation failed:", msg);
+      setAiError(`AI 規劃暫時無法回應: ${msg}. 請稍後重試, 或試試不同條件.`);
+      setGenerated([]);
       setGenSource("local");
     } finally {
       setIsThinking(false);
@@ -275,6 +280,7 @@ export default function ChatPage() {
           aiError={aiError}
           rateLimit={rateLimit}
           onLoginRequired={setLoginPrompt}
+          poiMap={poiMap}
         />
       )}
 
@@ -1030,6 +1036,7 @@ function ResultsView({
   aiError,
   rateLimit,
   onLoginRequired,
+  poiMap,
 }: {
   data: WizardData;
   plans: GeneratedPlan[];
@@ -1038,10 +1045,10 @@ function ResultsView({
   aiError: string | null;
   rateLimit: { remaining: number; resetAt: number; blocked: boolean } | null;
   onLoginRequired: (action: "save" | "share") => void;
+  poiMap: Map<string, Poi>;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = plans.find((p) => p.id === selectedId);
-  const coverage = inventoryCoverage(data);
 
   // Rate limited (0 plans, blocked) — special empty state
   if (rateLimit?.blocked && plans.length === 0) {
@@ -1117,21 +1124,6 @@ function ResultsView({
         </div>
       )}
 
-      {!coverage.enough && (
-        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          <p className="font-semibold">
-            ⚠ {coverage.requestedLabel} 我們資料還不夠多
-          </p>
-          <p className="mt-1 text-xs text-amber-800">
-            v1 內測階段 POI 主要集中北部。先用其他地區的相似條件景點給你參考 ...
-            想搶先收到該地新景點？
-            <Link href="/waitlist" className="ml-1 underline font-medium">
-              留 email 我們上線通知你
-            </Link>
-          </p>
-        </div>
-      )}
-
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
         {plans.map((p) => (
           <PlanCard
@@ -1139,12 +1131,18 @@ function ResultsView({
             plan={p}
             selected={selectedId === p.id}
             onSelect={() => setSelectedId(p.id)}
+            poiMap={poiMap}
           />
         ))}
       </div>
 
       {selected && (
-        <PlanDetailStateful plan={selected} data={data} onLoginRequired={onLoginRequired} />
+        <PlanDetailStateful
+          plan={selected}
+          data={data}
+          onLoginRequired={onLoginRequired}
+          poiMap={poiMap}
+        />
       )}
     </main>
   );
@@ -1161,14 +1159,16 @@ function PlanCard({
   plan,
   selected,
   onSelect,
+  poiMap,
 }: {
   plan: GeneratedPlan;
   selected: boolean;
   onSelect: () => void;
+  poiMap: Map<string, Poi>;
 }) {
   const totalStops = plan.days.reduce((s, d) => s + d.poiIds.length, 0);
   const firstDayItems = plan.days[0].poiIds
-    .map((id) => pois.find((p) => p.id === id))
+    .map((id) => poiMap.get(id))
     .filter((p): p is Poi => Boolean(p));
 
   return (
@@ -1238,50 +1238,65 @@ function PlanDetailStateful({
   plan,
   data,
   onLoginRequired,
+  poiMap: initialPoiMap,
 }: {
   plan: GeneratedPlan;
   data: WizardData;
   onLoginRequired: (action: "save" | "share") => void;
+  poiMap: Map<string, Poi>;
 }) {
   const [days, setDays] = useState<Day[]>(plan.days);
+  const [poiMap, setPoiMap] = useState(initialPoiMap);
+  const [swapping, setSwapping] = useState<string | null>(null);
 
-  const swap = (dayIdx: number, slotIdx: number) => {
+  const swap = async (dayIdx: number, slotIdx: number) => {
     const currentId = days[dayIdx].poiIds[slotIdx];
-    const currentPoi = pois.find((p) => p.id === currentId);
+    const currentPoi = poiMap.get(currentId);
     if (!currentPoi) return;
 
-    const allUsed = new Set(days.flatMap((d) => d.poiIds));
+    const slotKey = `${dayIdx}-${slotIdx}`;
+    setSwapping(slotKey);
+
+    const allUsed = days.flatMap((d) => d.poiIds);
     const hasKids = data.kidAges.length > 0;
     const minAge = hasKids ? Math.min(...data.kidAges) : 0;
     const maxAge = hasKids ? Math.max(...data.kidAges) : 99;
 
-    const candidates = pois.filter(
-      (p) =>
-        !allUsed.has(p.id) &&
-        p.category === currentPoi.category &&
-        (!hasKids || (p.ageMin <= maxAge && p.ageMax >= minAge))
-    );
+    try {
+      const res = await fetch("/api/poi/swap", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category: currentPoi.category,
+          excludeIds: allUsed,
+          minAge,
+          maxAge,
+        }),
+      });
 
-    if (candidates.length === 0) {
-      // Loosen criteria: same category, ignore age
-      const loose = pois.filter((p) => !allUsed.has(p.id) && p.category === currentPoi.category);
-      if (loose.length === 0) {
+      if (res.status === 404) {
         alert("沒有其他符合條件的選項可換 :(");
         return;
       }
-      candidates.push(...loose);
-    }
+      if (!res.ok) {
+        alert("換景點失敗, 稍後再試");
+        return;
+      }
 
-    const pick = candidates[Math.floor(Math.random() * candidates.length)];
-    setDays((d) => {
-      const next = d.map((day) => ({ poiIds: [...day.poiIds] }));
-      next[dayIdx].poiIds[slotIdx] = pick.id;
-      return next;
-    });
+      const { poi: pick } = (await res.json()) as { poi: Poi };
+      setPoiMap((m) => new Map(m).set(pick.id, pick));
+      setDays((d) => {
+        const next = d.map((day) => ({ poiIds: [...day.poiIds] }));
+        next[dayIdx].poiIds[slotIdx] = pick.id;
+        return next;
+      });
+    } finally {
+      setSwapping(null);
+    }
   };
 
   const handleExportICS = () => {
-    const ics = generateICS({ ...plan, days }, data);
+    const ics = generateICS({ ...plan, days }, data, poiMap);
     const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -1401,6 +1416,9 @@ function PlanDetailStateful({
             slotLabels={slotLabelsFor(data.duration)}
             onSwap={(slotIdx) => swap(dayIdx, slotIdx)}
             reasons={plan.reasons}
+            poiMap={poiMap}
+            swappingKey={swapping}
+            dayIdx={dayIdx}
           />
         </div>
       ))}
@@ -1422,17 +1440,24 @@ function DayTimeline({
   slotLabels,
   onSwap,
   reasons,
+  poiMap,
+  swappingKey,
+  dayIdx,
 }: {
   poiIds: string[];
   slotLabels: string[];
   onSwap: (slotIdx: number) => void;
   reasons?: Record<string, string>;
+  poiMap: Map<string, Poi>;
+  swappingKey: string | null;
+  dayIdx: number;
 }) {
   return (
     <ol className="space-y-3">
       {poiIds.map((id, i) => {
-        const p = pois.find((x) => x.id === id);
+        const p = poiMap.get(id);
         if (!p) return null;
+        const isSwapping = swappingKey === `${dayIdx}-${i}`;
         const meta = categoryMeta(p.category);
         return (
           <li
@@ -1461,8 +1486,12 @@ function DayTimeline({
                 </div>
                 <button
                   onClick={() => onSwap(i)}
+                  disabled={isSwapping}
                   title="換一個"
-                  className="rounded-full p-1.5 text-stone-400 transition hover:bg-white hover:text-orange-600"
+                  className={cx(
+                    "rounded-full p-1.5 text-stone-400 transition hover:bg-white hover:text-orange-600",
+                    isSwapping && "animate-spin opacity-50 cursor-wait"
+                  )}
                 >
                   <RefreshCw size={14} />
                 </button>
@@ -1511,287 +1540,6 @@ function DayTimeline({
   );
 }
 
-// ────────────────────────────────────────────────────────────────────
-// Plan generator
-// ────────────────────────────────────────────────────────────────────
-
-function inventoryCoverage(d: WizardData): { enough: boolean; requestedLabel: string } {
-  if (d.destMode === "any") return { enough: true, requestedLabel: "" };
-  const hasKids = d.kidAges.length > 0;
-  const minAge = hasKids ? Math.min(...d.kidAges) : 0;
-  const maxAge = hasKids ? Math.max(...d.kidAges) : 99;
-  const matching = pois.filter(
-    (p) =>
-      (!hasKids || (p.ageMin <= maxAge && p.ageMax >= minAge)) &&
-      d.destAreas.some(
-        (a) => p.district.includes(a) || p.address?.includes(a) || p.name.includes(a)
-      )
-  );
-  const needed = slotsPerDay(d.duration) * numDays(d.duration);
-  // Use cityLabel for display
-  const labels = d.destAreas
-    .map(
-      (v) =>
-        ALL_CITIES.find((c) => c.value === v)?.label ??
-        DESTINATION_LANDMARKS.find((c) => c.value === v)?.label ??
-        v
-    )
-    .slice(0, 3)
-    .join("、");
-  return {
-    enough: matching.length >= needed,
-    requestedLabel: labels + (d.destAreas.length > 3 ? "..." : ""),
-  };
-}
-
-// ────────────────────────────────────────────────────────────────────
-// Geographic clustering — 防止「台北出發 1 日遊推薦墾丁」
-// ────────────────────────────────────────────────────────────────────
-
-type Zone = "north" | "central" | "south" | "east" | "island";
-
-const REGION_ZONE: Record<string, Zone> = {
-  // 北部
-  "基隆市": "north", "臺北市": "north", "新北市": "north",
-  "桃園市": "north", "新竹市": "north", "新竹縣": "north",
-  "宜蘭縣": "north",
-  // 中部
-  "苗栗縣": "central", "臺中市": "central", "彰化縣": "central",
-  "南投縣": "central", "雲林縣": "central",
-  // 南部
-  "嘉義市": "south", "嘉義縣": "south", "臺南市": "south",
-  "高雄市": "south", "屏東縣": "south",
-  // 東部
-  "花蓮縣": "east", "臺東縣": "east",
-  // 離島
-  "澎湖縣": "island", "金門縣": "island", "連江縣": "island",
-};
-
-const ADJACENT_ZONES: Record<Zone, Zone[]> = {
-  north: ["central"],
-  central: ["north", "south"],
-  south: ["central", "east"],
-  east: ["south", "central"],
-  island: [],
-};
-
-function poiZone(p: Poi): Zone | null {
-  // Try address first (more complete), fall back to district
-  for (const region of Object.keys(REGION_ZONE)) {
-    if (p.address?.includes(region) || p.district.includes(region)) {
-      return REGION_ZONE[region];
-    }
-  }
-  return null;
-}
-
-function zoneAllowed(startZone: Zone, pZone: Zone | null, duration: Duration): boolean {
-  if (!pZone) return true; // unknown zone, don't penalize
-  if (pZone === startZone) return true;
-
-  const isAdjacent = ADJACENT_ZONES[startZone]?.includes(pZone);
-
-  if (duration === "half" || duration === "full") {
-    // 1 日遊: 嚴格, 只能同 zone (不允許相鄰, 開車單程 1.5 小時 以內才合理)
-    return false;
-  }
-  if (duration === "d2n1") {
-    // 2 天 1 夜: 允許相鄰
-    return isAdjacent;
-  }
-  // 3 天 2 夜+: 任何 zone
-  return true;
-}
-
-function numDays(d: Duration): number {
-  return d === "d3n2" ? 3 : d === "d2n1" ? 2 : 1;
-}
-
-function slotsPerDay(d: Duration): number {
-  return d === "half" ? 3 : 5;
-}
-
-function generatePlans(d: WizardData): GeneratedPlan[] {
-  const wantRainy = d.needs.includes("rainy") || d.vibes.includes("indoor");
-  const wantFree = d.budget === "low";
-
-  const planA: GeneratedPlan = {
-    id: "plan_a",
-    theme: "平衡推薦",
-    description: "最貼合你選的氛圍，預算落在中段。多數爸媽的安全選擇。",
-    badge: "★ 最符合需求",
-    badgeColor: "bg-orange-100 text-orange-700",
-    days: buildDays(d, "balanced"),
-    estimatedCost: 0,
-  };
-
-  const planB: GeneratedPlan = {
-    id: "plan_b",
-    theme: wantFree ? "免費版" : "經濟實惠版",
-    description: wantFree
-      ? "0 元也能玩整天。公園 + 自帶餐點 + 免費場館。"
-      : "同樣的氛圍，預算砍 30%。多選免費場館、平價親子餐廳。",
-    badge: "💰 省錢首選",
-    badgeColor: "bg-emerald-100 text-emerald-700",
-    days: buildDays(d, "budget"),
-    estimatedCost: 0,
-  };
-
-  const planC: GeneratedPlan = {
-    id: "plan_c",
-    theme: wantRainy ? "雨天備案版" : "精選升級版",
-    description: wantRainy
-      ? "全室內，下雨也不怕。預算稍微高一點，但體驗最完整。"
-      : "加入更精選的場館跟人氣餐廳。預算多 20%，但回憶值翻倍。",
-    badge: wantRainy ? "☔ 雨備" : "✨ 升級",
-    badgeColor: "bg-violet-100 text-violet-700",
-    days: buildDays(d, wantRainy ? "rainy" : "premium"),
-    estimatedCost: 0,
-  };
-
-  [planA, planB, planC].forEach((plan) => {
-    plan.estimatedCost = plan.days
-      .flatMap((day) => day.poiIds)
-      .reduce((sum, id) => {
-        const p = pois.find((x) => x.id === id);
-        return p ? sum + Math.round((p.priceMin + p.priceMax) / 2) * (d.adults + d.kids) : sum;
-      }, 0);
-  });
-
-  return [planA, planB, planC];
-}
-
-type Flavor = "balanced" | "budget" | "rainy" | "premium";
-
-function buildDays(d: WizardData, flavor: Flavor): Day[] {
-  const days: Day[] = [];
-  const usedIds = new Set<string>();
-  const dayCount = numDays(d.duration);
-  const perDay = slotsPerDay(d.duration);
-
-  for (let i = 0; i < dayCount; i++) {
-    const slots = pickSlots(d, flavor, perDay, usedIds);
-    slots.forEach((id) => usedIds.add(id));
-    days.push({ poiIds: slots });
-  }
-  return days;
-}
-
-function pickSlots(
-  d: WizardData,
-  flavor: Flavor,
-  count: number,
-  exclude: Set<string>
-): string[] {
-  const hasKids = d.kidAges.length > 0;
-  const minAge = hasKids ? Math.min(...d.kidAges) : 0;
-  const maxAge = hasKids ? Math.max(...d.kidAges) : 99;
-
-  const ageOK = (p: Poi) => !hasKids || (p.ageMin <= maxAge && p.ageMax >= minAge);
-
-  const matchesDest = (p: Poi) =>
-    d.destMode === "any" ||
-    d.destAreas.some(
-      (a) => p.district.includes(a) || p.address?.includes(a) || p.name.includes(a)
-    );
-
-  // 距離 filter: destMode=specific 時尊重用戶 (跳過 zone 檢查)
-  // destMode=any 時依 duration 嚴格度限制可選 zone
-  const startZone = REGION_ZONE[d.startArea] ?? "north";
-  const passesZone = (p: Poi) =>
-    d.destMode === "specific" || zoneAllowed(startZone, poiZone(p), d.duration);
-
-  const matching = pois.filter(
-    (p) => !exclude.has(p.id) && ageOK(p) && matchesDest(p) && passesZone(p)
-  );
-  const fallback = pois.filter((p) => !exclude.has(p.id) && ageOK(p) && passesZone(p));
-
-  const pool = matching.length >= count ? matching : fallback;
-  const restaurants = pool.filter((p) => p.category === "restaurant");
-  const attractions = pool.filter((p) => p.category !== "restaurant");
-
-  let attrSorted: Poi[];
-  let restSorted: Poi[];
-
-  if (flavor === "budget") {
-    attrSorted = sortBy(attractions, (p) => p.priceMin + p.priceMax);
-    restSorted = sortBy(restaurants, (p) => p.priceMin + p.priceMax);
-  } else if (flavor === "rainy") {
-    const indoor = (arr: Poi[]) =>
-      arr.filter(
-        (p) =>
-          p.tags.includes("室內") ||
-          p.tags.includes("雨天備案") ||
-          p.tags.includes("雨天首選")
-      );
-    attrSorted = indoor(attractions).concat(attractions);
-    restSorted = indoor(restaurants).concat(restaurants);
-  } else if (flavor === "premium") {
-    attrSorted = sortBy(attractions, (p) => -p.likes);
-    restSorted = sortBy(restaurants, (p) => -p.likes);
-  } else {
-    const score = (p: Poi): number => {
-      let s = 0;
-      if (d.vibes.includes("outdoor") && (p.category === "park" || p.tags.includes("戶外"))) s += 3;
-      if (d.vibes.includes("indoor") && p.tags.includes("室內")) s += 3;
-      if (d.vibes.includes("animals") && p.category === "zoo") s += 3;
-      if (d.vibes.includes("learning") && p.category === "museum") s += 3;
-      if (d.vibes.includes("food") && p.category === "restaurant") s += 2;
-      if (d.vibes.includes("energy") && (p.category === "park" || p.category === "amusement")) s += 3;
-      if (d.needs.includes("stroller") && p.tags.includes("推車友善")) s += 1;
-      if (d.needs.includes("metro") && p.tags.includes("捷運直達")) s += 1;
-      if (d.needs.includes("no_crowd") && p.tags.includes("平日人少")) s += 1;
-      return s;
-    };
-    attrSorted = sortBy(attractions, (p) => -score(p));
-    restSorted = sortBy(restaurants, (p) => -score(p));
-  }
-
-  const dedup = (a: Poi[]): Poi[] => {
-    const seen = new Set<string>();
-    const out: Poi[] = [];
-    for (const p of a) {
-      if (!seen.has(p.id)) {
-        seen.add(p.id);
-        out.push(p);
-      }
-    }
-    return out;
-  };
-  attrSorted = dedup(attrSorted);
-  restSorted = dedup(restSorted);
-
-  const out: string[] = [];
-  const pushUnique = (id: string | undefined) => {
-    if (id && !out.includes(id)) out.push(id);
-  };
-
-  if (count === 3) {
-    // half day: brunch + attr + snack-or-attr
-    pushUnique(restSorted[0]?.id);
-    pushUnique(attrSorted[0]?.id);
-    pushUnique(restSorted[1]?.id ?? attrSorted[1]?.id);
-  } else {
-    // full day (5 slots): brunch + attr + snack + attr + dinner
-    pushUnique(restSorted[0]?.id);
-    pushUnique(attrSorted[0]?.id);
-    pushUnique(attrSorted[1]?.id);
-    pushUnique(attrSorted[2]?.id);
-    pushUnique(restSorted[1]?.id ?? attrSorted[3]?.id);
-  }
-
-  // Pad if short
-  for (const p of [...attrSorted, ...restSorted]) {
-    if (out.length >= count) break;
-    pushUnique(p.id);
-  }
-
-  return out.slice(0, count);
-}
-
-function sortBy<T>(arr: T[], fn: (x: T) => number): T[] {
-  return [...arr].sort((a, b) => fn(a) - fn(b));
-}
 
 // ────────────────────────────────────────────────────────────────────
 // ICS calendar export
@@ -1832,7 +1580,7 @@ function escapeICS(s: string): string {
   return s.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
 }
 
-function generateICS(plan: GeneratedPlan, data: WizardData): string {
+function generateICS(plan: GeneratedPlan, data: WizardData, poiMap: Map<string, Poi>): string {
   const base = deriveBaseDate(data.date);
   const events: string[] = [];
   const stamp = fmtICSDate(new Date());
@@ -1845,7 +1593,7 @@ function generateICS(plan: GeneratedPlan, data: WizardData): string {
     let cursor = new Date(dayDate);
 
     day.poiIds.forEach((id, slotIdx) => {
-      const p = pois.find((x) => x.id === id);
+      const p = poiMap.get(id);
       if (!p) return;
       const start = new Date(cursor);
       const end = new Date(cursor.getTime() + p.durationMin * 60000);

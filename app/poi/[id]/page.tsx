@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Heart, MapPin, Clock, Wallet, Sparkles, Bookmark } from "lucide-react";
 import { Nav } from "@/components/Nav";
 import { PoiImage } from "@/components/PoiImage";
-import { getPoi, categoryMeta } from "@/lib/mock-data";
+import { categoryMeta } from "@/lib/mock-data";
+import { getPoiById } from "@/lib/poi-queries";
 
 export default async function PoiDetailPage({
   params,
@@ -11,7 +12,7 @@ export default async function PoiDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const poi = getPoi(id);
+  const poi = await getPoiById(id);
   if (!poi) notFound();
 
   const meta = categoryMeta(poi.category);

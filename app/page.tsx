@@ -2,11 +2,24 @@ import Link from "next/link";
 import { Sparkles, Heart, Eye, Trophy, ArrowRight } from "lucide-react";
 import { Nav } from "@/components/Nav";
 import { PoiCard } from "@/components/PoiCard";
-import { pois, itineraries, topContributors, getPoi } from "@/lib/mock-data";
+import { itineraries, topContributors } from "@/lib/mock-data";
+import { getPois, getPoisByIds, countPois } from "@/lib/poi-queries";
 
-export default function Home() {
-  const featuredPois = pois.slice(0, 6);
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
   const featuredItineraries = itineraries.slice(0, 3);
+  // Fetch top 6 popular POIs + all POIs used by demo itineraries (for mini preview cards)
+  const allDemoIds = Array.from(
+    new Set(featuredItineraries.flatMap((it) => it.poiIds))
+  );
+  const [featuredPois, demoPois, totalCount] = await Promise.all([
+    getPois({ limit: 6, sort: "likes" }),
+    getPoisByIds(allDemoIds),
+    countPois(),
+  ]);
+  const demoPoiMap = new Map(demoPois.map((p) => [p.id, p]));
+  const getDemoPoi = (id: string) => demoPoiMap.get(id);
 
   return (
     <>
@@ -74,7 +87,7 @@ export default function Home() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {featuredItineraries.map((it) => {
             const itPois = it.poiIds
-              .map((id) => getPoi(id))
+              .map((id) => getDemoPoi(id))
               .filter((p): p is NonNullable<typeof p> => Boolean(p));
             return (
               <Link
@@ -155,7 +168,7 @@ export default function Home() {
               href="/poi"
               className="hidden text-sm font-medium text-orange-600 hover:text-orange-700 sm:inline"
             >
-              看全部 {pois.length.toLocaleString()}+ →
+              看全部 {totalCount.toLocaleString()}+ →
             </Link>
           </div>
 

@@ -1,5 +1,6 @@
-import { seedPois } from "./seed-pois";
-import { tdxPois } from "./tdx-pois";
+// 注意: 此檔僅保留 types + small demo data (itineraries + topContributors).
+// POI 資料一律從 lib/poi-queries.ts 走 server-side Supabase query (避免 client bundle 5MB).
+// seed-pois.ts / tdx-pois.ts / tdx-pois.json 留著當 import script 來源, 但 app 不再 import.
 
 export type PoiCategory =
   | "park"
@@ -44,7 +45,9 @@ const cat = (c: PoiCategory) => {
 
 export const categoryMeta = cat;
 
-const handCurated: Poi[] = [
+// 12 個編輯精選 hand-curated POI. App 不直接 import (改 server query),
+// 但 scripts/import-pois.ts 還要當 seed 來源.
+export const handCurated: Poi[] = [
   {
     id: "poi_zoo_taipei",
     name: "臺北市立動物園",
@@ -273,10 +276,7 @@ const handCurated: Poi[] = [
   },
 ];
 
-// 合併 12 hand + 60+ seed + 2500+ TDX = 2500+ POIs 全台覆蓋
-// 注意: 此模組會被 chat client component import → bundle 略大 (~2.5MB)
-//   v1.5 refactor: 改成 server-side query Supabase, client 只拿 visible POIs
-export const pois: Poi[] = [...handCurated, ...seedPois, ...tdxPois];
+// pois 不再 export (避免 client bundle 爆肥). 改從 lib/poi-queries.ts → Supabase 拿.
 
 export type Itinerary = {
   id: string;
@@ -347,10 +347,7 @@ export const itineraries: Itinerary[] = [
   },
 ];
 
-export function getPoi(id: string): Poi | undefined {
-  return pois.find((p) => p.id === id);
-}
-
+// getPoi 已被 poi-queries.getPoiById 取代 (server-side)
 export function getItinerary(id: string): Itinerary | undefined {
   return itineraries.find((i) => i.id === id);
 }

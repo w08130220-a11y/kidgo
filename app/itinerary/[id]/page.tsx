@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Heart, Share2, Bookmark, MapPin, Clock, Wallet, Eye } from "lucide-react";
 import { Nav } from "@/components/Nav";
-import { getItinerary, getPoi, categoryMeta } from "@/lib/mock-data";
+import { getItinerary, categoryMeta } from "@/lib/mock-data";
+import { getPoisByIds } from "@/lib/poi-queries";
 
 const SLOT_LABELS = ["早午餐", "上午景點", "點心 / 午茶", "下午景點", "晚餐"];
 
@@ -15,9 +16,7 @@ export default async function ItineraryDetailPage({
   const it = getItinerary(id);
   if (!it) notFound();
 
-  const items = it.poiIds
-    .map((pid) => getPoi(pid))
-    .filter((p): p is NonNullable<typeof p> => Boolean(p));
+  const items = await getPoisByIds(it.poiIds);
 
   const totalHours = Math.round(items.reduce((s, p) => s + p.durationMin, 0) / 60);
 

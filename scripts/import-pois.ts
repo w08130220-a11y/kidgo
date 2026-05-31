@@ -14,7 +14,10 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { createClient } from "@supabase/supabase-js";
-import { pois as mockDataPois, type Poi } from "../lib/mock-data";
+import { handCurated, type Poi } from "../lib/mock-data";
+import { seedPois } from "../lib/seed-pois";
+
+const mockDataPois: Poi[] = [...handCurated, ...seedPois];
 import type { EnrichedPoi } from "./types";
 
 const RESET = process.argv.includes("--reset");

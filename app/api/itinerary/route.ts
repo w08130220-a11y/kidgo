@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
-import { pois, type Poi } from "@/lib/mock-data";
+import { getPois } from "@/lib/poi-queries";
+import type { Poi } from "@/lib/mock-data";
 
 // ────────────────────────────────────────────────────────────────────
 // Shared types (mirror of client wizard data)
@@ -72,23 +73,77 @@ function zoneAllowed(start: Zone, pz: Zone | null, dur: Duration): boolean {
   return true;
 }
 
-function filterCandidates(d: WizardData): Poi[] {
+// Zone (north/central/south/east/island) → 中文 region (北部/中部/...)
+const ZONE_TO_REGION: Record<Zone, string> = {
+  north: "北部", central: "中部", south: "南部", east: "東部", island: "離島",
+};
+
+async function filterCandidates(d: WizardData): Promise<Poi[]> {
   const hasKids = d.kidAges.length > 0;
   const minAge = hasKids ? Math.min(...d.kidAges) : 0;
   const maxAge = hasKids ? Math.max(...d.kidAges) : 99;
   const startZone = REGION_ZONE[d.startArea] ?? "north";
-  return pois.filter((p) => {
-    if (hasKids && (p.ageMax < minAge || p.ageMin > maxAge)) return false;
-    if (d.destMode === "specific") {
-      const ok = d.destAreas.some(
+
+  // 計算允許的 zones (同 zone + 鄰近 if multi-day)
+  const allowedZones: Zone[] = [startZone];
+  if (d.duration === "d2n1" || d.duration === "d3n2") {
+    allowedZones.push(...ADJACENT[startZone]);
+  }
+  if (d.duration === "d3n2") {
+    // 3 天放更寬: 加 adjacent 的 adjacent
+    const moreZones = new Set<Zone>(allowedZones);
+    for (const z of allowedZones) ADJACENT[z].forEach((a) => moreZones.add(a));
+    allowedZones.splice(0, allowedZones.length, ...moreZones);
+  }
+  const allowedRegions = Array.from(new Set(allowedZones.map((z) => ZONE_TO_REGION[z])));
+
+  let candidates: Poi[] = [];
+
+  if (d.destMode === "specific" && d.destAreas.length > 0) {
+    // User chose specific destinations — query Supabase for each, merge
+    const all: Poi[] = [];
+    for (const region of allowedRegions) {
+      const partial = await getPois({
+        region,
+        limit: 200,
+        age03: hasKids && minAge <= 3 ? true : false,
+        age36: hasKids && minAge <= 6 && maxAge >= 3 ? true : false,
+        age612: hasKids && maxAge >= 6 ? true : false,
+      });
+      all.push(...partial);
+    }
+    // de-dupe + filter by destAreas
+    const seen = new Set<string>();
+    for (const p of all) {
+      if (seen.has(p.id)) continue;
+      seen.add(p.id);
+      const matchDest = d.destAreas.some(
         (a) => p.district.includes(a) || p.address?.includes(a) || p.name.includes(a)
       );
-      if (!ok) return false;
-    } else if (!zoneAllowed(startZone, poiZone(p), d.duration)) {
-      return false;
+      if (matchDest) candidates.push(p);
     }
-    return true;
-  });
+  } else {
+    // Generic query by zones
+    const all: Poi[] = [];
+    for (const region of allowedRegions) {
+      const partial = await getPois({ region, limit: 300 });
+      all.push(...partial);
+    }
+    // dedupe
+    const seen = new Set<string>();
+    for (const p of all) {
+      if (seen.has(p.id)) continue;
+      seen.add(p.id);
+      if (hasKids && (p.ageMax < minAge || p.ageMin > maxAge)) continue;
+      candidates.push(p);
+    }
+  }
+
+  // Cap to top 80 by likes to keep Claude prompt short
+  candidates.sort((a, b) => b.likes - a.likes);
+  if (candidates.length > 80) candidates = candidates.slice(0, 80);
+
+  return candidates;
 }
 
 const numDays = (d: Duration) => (d === "d3n2" ? 3 : d === "d2n1" ? 2 : 1);
@@ -205,7 +260,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const candidates = filterCandidates(d);
+  const candidates = await filterCandidates(d);
   if (candidates.length < 3) {
     return NextResponse.json(
       { error: "Not enough matching POIs", candidateCount: candidates.length },
@@ -492,8 +547,19 @@ ${JSON.stringify(candidateJson, null, 1)}
     };
   });
 
+  // 內嵌 POI 完整資料 (id → Poi) 讓 client 不用再 query DB
+  const usedIds = new Set<string>();
+  for (const plan of plans) {
+    for (const day of plan.days) for (const id of day.poiIds) usedIds.add(id);
+  }
+  const poiData: Record<string, Poi> = {};
+  for (const c of candidates) {
+    if (usedIds.has(c.id)) poiData[c.id] = c;
+  }
+
   return NextResponse.json({
     plans,
+    poiData,
     candidateCount: candidates.length,
     usage: {
       input_tokens: response.usage.input_tokens,
