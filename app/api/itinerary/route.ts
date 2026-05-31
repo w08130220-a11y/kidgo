@@ -100,9 +100,12 @@ async function filterCandidates(d: WizardData): Promise<Poi[]> {
   let candidates: Poi[] = [];
 
   if (d.destMode === "specific" && d.destAreas.length > 0) {
-    // User chose specific destinations — query Supabase for each, merge
+    // 用戶明指目的地 → 放開 zone 限制, 全台搜
+    // 不然「臺北出發 + 想去南投」一日遊就會找不到任何南投 POI (因為南投在中部 zone)
+    // 用戶都明說要去那了, 距離他自己負責
+    const ALL_REGIONS = ["北部", "中部", "南部", "東部", "離島"];
     const all: Poi[] = [];
-    for (const region of allowedRegions) {
+    for (const region of ALL_REGIONS) {
       const partial = await getPois({
         region,
         limit: 200,
@@ -329,7 +332,7 @@ export async function POST(req: Request) {
   const candidates = await filterCandidates(d);
   if (candidates.length < 3) {
     return NextResponse.json(
-      { error: "Not enough matching POIs", candidateCount: candidates.length },
+      { error: "符合條件的景點太少", candidateCount: candidates.length },
       { status: 422 }
     );
   }

@@ -1014,7 +1014,7 @@ function ResultsView({
           AI 規劃資源有限, 每天 3 次. 約 <strong>{hoursLeft} 小時</strong>後重置.
         </p>
         <p className="mt-2 max-w-md text-xs text-stone-500">
-          v1 內測階段每位用戶都一樣 (不論有沒有登入). 之後訂閱版會給更多次。
+          每位用戶每天 3 次 AI 規劃額度.
         </p>
         <div className="mt-6 flex gap-3">
           <Link
@@ -1036,36 +1036,21 @@ function ResultsView({
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6 sm:py-10">
-      <div className="mb-2 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wider text-orange-600">
-        <Sparkles size={14} /> AI 為你產生的方案
-        {source === "ai" && (
-          <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700">
-            ⚡ Claude Haiku 4.5
-          </span>
-        )}
-        {source === "local" && (
-          <span
-            className="rounded-full bg-stone-200 px-2 py-0.5 text-[10px] font-bold text-stone-600"
-            title={aiError ?? "rule-based fallback"}
-          >
-            🔧 規則排序 (fallback)
-          </span>
-        )}
-      </div>
       <h1 className="text-2xl font-bold sm:text-3xl">挑一個你最喜歡的</h1>
       <p className="mt-2 text-sm text-stone-600">{summarizeData(data)}</p>
 
-      {usage && source === "ai" && (
-        <p className="mt-1 text-[11px] text-stone-400">
-          tokens: in {usage.input_tokens.toLocaleString()} (cache hit{" "}
-          {usage.cache_read_input_tokens.toLocaleString()}) · out{" "}
-          {usage.output_tokens.toLocaleString()}
-        </p>
-      )}
-
-      {aiError && source === "local" && (
-        <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-900">
-          ⚠ Claude API 暫時無法回應 ({aiError})，已自動切回規則排序。功能完整可用。
+      {aiError && (
+        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
+          <p className="font-semibold">這個條件下找不到合適的行程 😢</p>
+          <p className="mt-2 leading-relaxed">
+            可能是出發地跟目的地太遠, 或選項太特殊. 試試:
+          </p>
+          <ul className="mt-2 ml-5 list-disc space-y-1">
+            <li>把「想去的地方」改成「都可以」, 讓 AI 自己決定</li>
+            <li>多選幾個氛圍 (戶外/室內/動物 等)</li>
+            <li>放寬預算</li>
+            <li>改成 2 天 1 夜跨縣市</li>
+          </ul>
         </div>
       )}
 
