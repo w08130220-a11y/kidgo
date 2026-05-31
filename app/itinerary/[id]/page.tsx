@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Heart, Share2, Bookmark, MapPin, Clock, Wallet, Eye } from "lucide-react";
+import { ArrowLeft, Heart, Sparkles, MapPin, Clock, Wallet, Eye } from "lucide-react";
 import { Nav } from "@/components/Nav";
 import { getItinerary, categoryMeta } from "@/lib/mock-data";
 import { getPoisByIds } from "@/lib/poi-queries";
@@ -72,20 +72,16 @@ export default async function ItineraryDetailPage({
             </span>
           </div>
 
-          <div className="mt-4 flex gap-2">
-            <button className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-600">
-              <Bookmark size={16} /> 複製成我的
-            </button>
-            <button className="flex items-center justify-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50">
-              <Heart size={16} />
-            </button>
-            <button className="flex items-center justify-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50">
-              <Share2 size={16} />
-            </button>
-          </div>
-
-          <div className="mt-6 rounded-xl bg-stone-50 px-4 py-3 text-xs text-stone-600">
-            <span className="font-semibold text-stone-900">原始 query：</span>「{it.query}」
+          <div className="mt-4">
+            <Link
+              href="/chat"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white hover:bg-orange-600"
+            >
+              <Sparkles size={16} /> 用 AI 規劃我家的行程
+            </Link>
+            <p className="mt-2 text-center text-xs text-stone-500">
+              這是其他爸媽的行程, 給你當靈感 ✨ 你的家庭條件不同, AI 會為你客製
+            </p>
           </div>
         </div>
 
