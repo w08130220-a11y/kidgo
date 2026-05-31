@@ -139,8 +139,8 @@ async function filterCandidates(d: WizardData): Promise<Poi[]> {
     }
   }
 
-  // v1.6: 我們只規劃景點, 不規劃餐廳 → 候選池過濾掉 restaurant
-  candidates = candidates.filter((p) => p.category !== "restaurant");
+  // v1.8: 餐廳留在候選池, AI 自由決定是否納入行程
+  // (餐廳大多是親子餐廳/觀光工廠帶餐廳, 排進中午/晚上時段也合理)
 
   // v1.7: 智慧前篩 — 按用戶 vibes/needs/budget 評分排序, 取 top 40
   // 不再單純按 likes 排序, 因為 likes 高 ≠ 符合用戶需求
@@ -160,7 +160,7 @@ const VIBE_TO_TAGS: Record<string, string[]> = {
   indoor: ["室內", "室內外"],
   animals: ["動物互動"],
   learning: [], // 走 category
-  food: [],     // restaurant 已排除, 無對應
+  food: ["有遊戲區"], // 親子餐廳通常有遊戲區
   energy: ["有遊戲區", "玩水"],
 };
 
@@ -171,6 +171,7 @@ const VIBE_TO_CATEGORIES: Record<string, string[]> = {
   energy: ["amusement", "indoor"],
   outdoor: ["park"],
   indoor: ["museum", "indoor", "amusement"],
+  food: ["restaurant"], // 親子美食 vibe 拉高餐廳分數
 };
 
 // needs → 對應的 tags
@@ -377,7 +378,10 @@ export async function POST(req: Request) {
    - 順序依時間: ${slotNames.join(" → ")} 各時段安排一個景點
    - 用戶選的活動量是硬性偏好, 即使候選池夠也不要超過上限
    - 候選池小或寧缺勿濫時, 可少到 ${minStops} 個 stops, **不要硬塞重複 POI**
-3. **此版本只規劃景點, 完全不排餐廳** (候選池已過濾掉 category=restaurant)
+3. 候選池含親子餐廳/觀光工廠等 category=restaurant 場館
+   - 中午/晚上時段可以排親子餐廳 (有遊戲區那種), 但不是必須
+   - 大多時段排景點 (park/museum/zoo/amusement/indoor) 即可
+   - 不要硬塞餐廳湊數, 真有合適的再放
 4. **同一天內不能重複用同一個 POI**
 5. 一個 plan 內的 POI 地理距離要合理 (參考 district 欄位)
 6. POI 年齡範圍要涵蓋小孩年齡
@@ -405,7 +409,7 @@ export async function POST(req: Request) {
 ${d.notes ? `- 補充說明: ${d.notes}` : ""}
 ${d.destMode === "specific" ? `- 想去的地方: ${d.destAreas.join("、")}` : "- 目的地不限, 你決定最合適"}
 
-# 可選 POI 池 (共 ${candidates.length} 筆, 純景點不含餐廳)
+# 可選 POI 池 (共 ${candidates.length} 筆, 含景點 + 親子餐廳)
 
 ${JSON.stringify(candidateJson, null, 1)}
 
@@ -422,8 +426,23 @@ ${JSON.stringify(candidateJson, null, 1)}
     client.messages.create({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 3000,
-      // v1.7: 不用 prompt cache. 因為 system prompt 含可變參數,
-      // 不同用戶 cache key 不同, 命中率 ~0, 反而吃 1.25x cache_write premium.
+      // ─── Prompt cache 預留 (流量起來後再啟用) ───────────────────────
+      // 目前低流量 + system prompt 嵌可變參數 (minStops/perDay/intensityLabel/slotNames),
+      // 不同用戶 cache key 不同 → 命中率 ~0, 反而吃 1.25x cache_write premium → 不划算.
+      //
+      // 啟用條件 (建議 ≥ 100 reqs/day 同時 ≤ 5 分鐘間隔再評估):
+      //   1. 把 systemPrompt 拆成 [固定部分] + [可變部分]
+      //      固定部分 (規則/範例/reason 標準) → 放 system position
+      //      可變部分 (minStops/perDay/...) → 移到 user message 開頭
+      //   2. 固定部分需 ≥ 2048 tokens (Haiku 4.5 cache 門檻), 若不夠就補範例
+      //   3. 在固定部分末尾加 cache_control:
+      //
+      //      system: [
+      //        { type: "text", text: FIXED_SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }
+      //      ],
+      //
+      //   4. 預期效益: cache_read 命中時, 固定部分按 0.1x 計價 (省 90%)
+      //      若 1000 req/day 集中在週末早上, cache 命中率 ~60% → 整體再省 5-8%
       system: systemPrompt,
       messages,
       tools: [itineraryTool as Anthropic.Tool],
