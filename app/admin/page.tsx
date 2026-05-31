@@ -93,6 +93,17 @@ export default async function AdminDashboard() {
                 </span>
               )}
             </Link>
+            <Link
+              href="/admin/feedback"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
+            >
+              用戶反饋
+              {stats.feedback.open > 0 && (
+                <span className="rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-700">
+                  {stats.feedback.open}
+                </span>
+              )}
+            </Link>
             <a
               href="https://analytics.google.com"
               target="_blank"
@@ -104,17 +115,32 @@ export default async function AdminDashboard() {
           </div>
         </div>
 
-        {/* 待審警示 */}
-        {stats.content.pois.pending > 0 && (
-          <Link
-            href="/admin/pois"
-            className="mb-6 flex items-center gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 hover:bg-amber-100"
-          >
-            <AlertCircle size={20} />
-            <span>
-              有 <strong>{stats.content.pois.pending}</strong> 個 UGC 景點等待你審核
-            </span>
-          </Link>
+        {/* 待辦警示 */}
+        {(stats.content.pois.pending > 0 || stats.feedback.open > 0) && (
+          <div className="mb-6 space-y-2">
+            {stats.content.pois.pending > 0 && (
+              <Link
+                href="/admin/pois"
+                className="flex items-center gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 hover:bg-amber-100"
+              >
+                <AlertCircle size={20} />
+                <span>
+                  有 <strong>{stats.content.pois.pending}</strong> 個 UGC 景點等待你審核 →
+                </span>
+              </Link>
+            )}
+            {stats.feedback.open > 0 && (
+              <Link
+                href="/admin/feedback"
+                className="flex items-center gap-3 rounded-2xl border border-rose-300 bg-rose-50 p-4 text-sm text-rose-900 hover:bg-rose-100"
+              >
+                <AlertCircle size={20} />
+                <span>
+                  有 <strong>{stats.feedback.open}</strong> 則新用戶反饋等待處理 →
+                </span>
+              </Link>
+            )}
+          </div>
         )}
 
         {/* 用戶統計 4 卡 */}

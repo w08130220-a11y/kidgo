@@ -31,7 +31,8 @@ service_role key     SUPABASE_SERVICE_ROLE_KEY  ⚠ 機密
 4. 再貼 `0003_likes_triggers.sql` → Run (按讚自動同步計數)
 5. 再貼 `0004_bookmarks.sql` → Run (想去清單 bookmarks table)
 6. 再貼 `0005_has_photo_column.sql` → Run (has_photo generated column 給排序用)
-7. 成功後 Tables 應該看得到 pois / profiles / itineraries / likes / comments / user_points / point_events / bookmarks
+7. 再貼 `0006_feedback.sql` → Run (用戶反饋表)
+8. 成功後 Tables 應該看得到 pois / profiles / itineraries / likes / comments / user_points / point_events / bookmarks / feedback
 
 **B. Supabase CLI (之後改 schema 用)**
 ```bash

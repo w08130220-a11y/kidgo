@@ -21,6 +21,7 @@ export type AdminStats = {
     comments: number;
     bookmarks: number;
   };
+  feedback: { open: number; total: number };
   ai: { itinerariesGenerated: number };
 };
 
@@ -82,6 +83,8 @@ export async function getAdminStats(): Promise<AdminStats> {
     { count: likesTotal },
     { count: commentsTotal },
     { count: bookmarksTotal },
+    { count: feedbackOpen },
+    { count: feedbackTotal },
   ] = await Promise.all([
     admin.from("pois").select("*", { count: "exact", head: true }).eq("status", "approved"),
     admin
@@ -97,6 +100,8 @@ export async function getAdminStats(): Promise<AdminStats> {
     admin.from("likes").select("*", { count: "exact", head: true }),
     admin.from("comments").select("*", { count: "exact", head: true }),
     admin.from("bookmarks").select("*", { count: "exact", head: true }),
+    admin.from("feedback").select("*", { count: "exact", head: true }).eq("status", "open"),
+    admin.from("feedback").select("*", { count: "exact", head: true }),
   ]);
 
   return {
@@ -113,6 +118,10 @@ export async function getAdminStats(): Promise<AdminStats> {
       likes: likesTotal ?? 0,
       comments: commentsTotal ?? 0,
       bookmarks: bookmarksTotal ?? 0,
+    },
+    feedback: {
+      open: feedbackOpen ?? 0,
+      total: feedbackTotal ?? 0,
     },
     ai: {
       // 用 itineraries source='ai' 推估
