@@ -58,7 +58,7 @@ export default async function PoiListPage({
   const limit = pageNum * PAGE_SIZE; // Load top N (so prev pages also show)
 
   const [visible, totalMatching, byRegion] = await Promise.all([
-    getPois({ ...filterOpts, limit, sort: "likes" }),
+    getPois({ ...filterOpts, limit, sort: "likes", prioritizePhoto: true }),
     countPois(filterOpts),
     countByRegion(),
   ]);

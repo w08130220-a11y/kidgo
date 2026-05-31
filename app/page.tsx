@@ -14,7 +14,7 @@ export default async function Home() {
     new Set(featuredItineraries.flatMap((it) => it.poiIds))
   );
   const [featuredPois, demoPois, totalCount] = await Promise.all([
-    getPois({ limit: 6, sort: "likes" }),
+    getPois({ limit: 6, sort: "likes", prioritizePhoto: true }),
     getPoisByIds(allDemoIds),
     countPois(),
   ]);

@@ -99,6 +99,9 @@ export type PoiQueryOpts = PoiFilters & {
   sort?: "likes" | "recent" | "cheap";
   limit?: number;
   offset?: number;
+  /** 有照片的排前面 (UX 較好). 預設 false, 只有展示列表 (/poi) 才要 true.
+   *  AI 規劃候選池千萬不要開, 不然會影響「最匹配用戶需求」的排序. */
+  prioritizePhoto?: boolean;
 };
 
 // ────────────────────────────────────────────────────────────────────
@@ -123,9 +126,11 @@ export async function getPois(opts: PoiQueryOpts = {}): Promise<Poi[]> {
   if (opts.age612) q = q.gte("age_max", 6);
 
   // Sort
-  // v1.8: 一律「有照片的優先」(沒照片視覺體驗差), 再按 user 選的 sort
+  // 展示列表 (prioritizePhoto: true) 要把有照片的排前面, AI 規劃不用
+  if (opts.prioritizePhoto) {
+    q = q.order("has_photo", { ascending: false, nullsFirst: false });
+  }
   const sort = opts.sort ?? "likes";
-  q = q.order("has_photo", { ascending: false, nullsFirst: false });
   if (sort === "likes") q = q.order("like_count", { ascending: false });
   else if (sort === "recent") q = q.order("created_at", { ascending: false });
   else if (sort === "cheap") q = q.order("price_min", { ascending: true });
