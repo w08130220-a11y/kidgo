@@ -215,37 +215,42 @@ function LikeLoginPrompt({ onClose }: { onClose: () => void }) {
             用 Google 登入
           </button>
 
-          <div className="my-3 flex items-center gap-2 text-xs text-stone-400">
-            <div className="h-px flex-1 bg-stone-200" />
-            或
-            <div className="h-px flex-1 bg-stone-200" />
-          </div>
+          {/* email magic link 暫時關閉, 之後啟用把 false 改 true */}
+          {false && (
+            <>
+              <div className="my-3 flex items-center gap-2 text-xs text-stone-400">
+                <div className="h-px flex-1 bg-stone-200" />
+                或
+                <div className="h-px flex-1 bg-stone-200" />
+              </div>
 
-          <form onSubmit={handleMagicLink} className="space-y-2">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
-              className="w-full rounded-xl border border-stone-300 px-3 py-2.5 text-sm outline-none focus:border-orange-400"
-              disabled={state === "sending" || state === "sent"}
-            />
-            <button
-              type="submit"
-              disabled={state === "sending" || state === "sent"}
-              className={cx(
-                "w-full rounded-xl px-4 py-2.5 text-sm font-medium text-white transition",
-                state === "sent" ? "bg-emerald-600" : "bg-stone-900 hover:bg-stone-700",
-                state === "sending" && "opacity-60 cursor-wait"
-              )}
-            >
-              {state === "sending"
-                ? "寄送中..."
-                : state === "sent"
-                  ? "✓ 已寄出"
-                  : "寄登入連結"}
-            </button>
-          </form>
+              <form onSubmit={handleMagicLink} className="space-y-2">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  className="w-full rounded-xl border border-stone-300 px-3 py-2.5 text-sm outline-none focus:border-orange-400"
+                  disabled={state === "sending" || state === "sent"}
+                />
+                <button
+                  type="submit"
+                  disabled={state === "sending" || state === "sent"}
+                  className={cx(
+                    "w-full rounded-xl px-4 py-2.5 text-sm font-medium text-white transition",
+                    state === "sent" ? "bg-emerald-600" : "bg-stone-900 hover:bg-stone-700",
+                    state === "sending" && "opacity-60 cursor-wait"
+                  )}
+                >
+                  {state === "sending"
+                    ? "寄送中..."
+                    : state === "sent"
+                      ? "✓ 已寄出"
+                      : "寄登入連結"}
+                </button>
+              </form>
+            </>
+          )}
 
           {msg && (
             <p

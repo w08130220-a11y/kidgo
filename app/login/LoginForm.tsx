@@ -1,8 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+
+// 偵測 app 內建瀏覽器 (WebView) — Google OAuth 會拒絕 disallowed_useragent
+function isInAppBrowser(ua: string): boolean {
+  const patterns = [
+    /Line\//i,           // LINE
+    /FBAN|FBAV|FB_IAB/i, // Facebook
+    /Instagram/i,        // Instagram
+    /Twitter|TwitterAndroid/i, // Twitter/X
+    /Threads/i,          // Threads
+    /MicroMessenger/i,   // WeChat
+    /WhatsApp/i,         // WhatsApp
+  ];
+  return patterns.some((p) => p.test(ua));
+}
 
 export function LoginForm({
   nextPath,
@@ -14,6 +28,13 @@ export function LoginForm({
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [msg, setMsg] = useState("");
+  const [inAppBrowser, setInAppBrowser] = useState(false);
+
+  useEffect(() => {
+    if (typeof navigator !== "undefined") {
+      setInAppBrowser(isInAppBrowser(navigator.userAgent));
+    }
+  }, []);
 
   const handleGoogle = async () => {
     const supabase = createClient();
@@ -69,10 +90,25 @@ export function LoginForm({
         </div>
       )}
 
+      {inAppBrowser && (
+        <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+          <p className="font-bold">⚠ 請用瀏覽器開啟登入</p>
+          <p className="mt-1 leading-relaxed">
+            你目前是從 LINE / FB / IG 等 app 的內建瀏覽器開啟, Google 為了安全會擋住登入.
+          </p>
+          <p className="mt-2 leading-relaxed">
+            <strong>iPhone</strong>: 右下角 ⋯ 選「在 Safari 開啟」<br />
+            <strong>Android</strong>: 右上角 ⋮ 選「在 Chrome 開啟」<br />
+            或長按網址列複製到 Safari/Chrome 開
+          </p>
+        </div>
+      )}
+
       <div className="mt-6 space-y-2">
         <button
           onClick={handleGoogle}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm font-semibold text-stone-800 hover:bg-stone-50 transition"
+          disabled={inAppBrowser}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm font-semibold text-stone-800 transition hover:bg-stone-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
             <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
@@ -82,36 +118,40 @@ export function LoginForm({
           </svg>
           用 Google 登入
         </button>
-
-        <div className="my-3 flex items-center gap-2 text-[11px] text-stone-400">
-          <span className="h-px flex-1 bg-stone-200" />
-          或用 Email
-          <span className="h-px flex-1 bg-stone-200" />
-        </div>
-
-        <form onSubmit={handleMagicLink} className="space-y-2">
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="your@email.com"
-            disabled={state === "sending" || state === "sent"}
-            className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none focus:border-orange-400 disabled:bg-stone-50"
-          />
-          <button
-            type="submit"
-            disabled={state === "sending" || state === "sent"}
-            className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition ${
-              state === "sent"
-                ? "bg-emerald-500 text-white"
-                : "bg-orange-500 text-white hover:bg-orange-600"
-            } ${state === "sending" ? "opacity-60 cursor-wait" : ""}`}
-          >
-            {state === "sending" ? "寄信中..." : state === "sent" ? "✓ 已寄出" : "寄送登入連結"}
-          </button>
-        </form>
       </div>
+
+      {/* email magic link 暫時關閉, 之後要重新啟用就把下面 false 改 true */}
+      {false && (
+        <div className="mt-2 space-y-2">
+          <div className="my-3 flex items-center gap-2 text-[11px] text-stone-400">
+            <span className="h-px flex-1 bg-stone-200" />
+            或用 Email
+            <span className="h-px flex-1 bg-stone-200" />
+          </div>
+          <form onSubmit={handleMagicLink} className="space-y-2">
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="your@email.com"
+              disabled={state === "sending" || state === "sent"}
+              className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none focus:border-orange-400 disabled:bg-stone-50"
+            />
+            <button
+              type="submit"
+              disabled={state === "sending" || state === "sent"}
+              className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition ${
+                state === "sent"
+                  ? "bg-emerald-500 text-white"
+                  : "bg-orange-500 text-white hover:bg-orange-600"
+              } ${state === "sending" ? "opacity-60 cursor-wait" : ""}`}
+            >
+              {state === "sending" ? "寄信中..." : state === "sent" ? "✓ 已寄出" : "寄送登入連結"}
+            </button>
+          </form>
+        </div>
+      )}
 
       {msg && (
         <p

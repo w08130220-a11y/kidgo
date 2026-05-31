@@ -386,36 +386,6 @@ function LoginPromptModal({
             用 Google 登入
           </button>
 
-          <div className="my-3 flex items-center gap-2 text-[11px] text-stone-400">
-            <span className="h-px flex-1 bg-stone-200" />
-            或用 Email
-            <span className="h-px flex-1 bg-stone-200" />
-          </div>
-
-          <form onSubmit={handleMagicLink} className="space-y-2">
-            <input
-              type="email"
-              required
-              value={magicEmail}
-              onChange={(e) => setMagicEmail(e.target.value)}
-              placeholder="your@email.com"
-              disabled={magicState === "sending" || magicState === "sent"}
-              className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none focus:border-orange-400 disabled:bg-stone-50"
-            />
-            <button
-              type="submit"
-              disabled={magicState === "sending" || magicState === "sent"}
-              className={cx(
-                "flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition",
-                magicState === "sent"
-                  ? "bg-emerald-500 text-white"
-                  : "bg-orange-500 text-white hover:bg-orange-600",
-                magicState === "sending" && "opacity-60 cursor-wait"
-              )}
-            >
-              {magicState === "sending" ? "寄信中..." : magicState === "sent" ? "✓ 已寄出" : "寄送登入連結"}
-            </button>
-          </form>
         </div>
 
         {magicMsg && (
@@ -426,10 +396,6 @@ function LoginPromptModal({
             {magicMsg}
           </p>
         )}
-
-        <p className="mt-4 text-center text-[11px] text-stone-500">
-          v1 內測階段, 加入 Google test users 才能登入。LINE 登入 v2 推出。
-        </p>
 
         <button
           onClick={onClose}
