@@ -18,9 +18,16 @@ export async function GET(req: Request) {
   const code = url.searchParams.get("code");
   const next = url.searchParams.get("next") ?? "/";
 
+  // Vercel 反向代理時 req.url 的 host 可能是內部 URL,
+  // x-forwarded-host 才是真實對外 host (例 www.kidgo.life)
+  const forwardedHost = req.headers.get("x-forwarded-host");
+  const forwardedProto = req.headers.get("x-forwarded-proto") ?? "https";
+  const baseOrigin = forwardedHost
+    ? `${forwardedProto}://${forwardedHost}`
+    : url.origin;
+
   if (!code) {
-    // 沒 code = 用戶取消或錯誤
-    return NextResponse.redirect(new URL("/?login_error=no_code", url.origin));
+    return NextResponse.redirect(`${baseOrigin}/?login_error=no_code`);
   }
 
   const supabase = await createServerClient();
@@ -29,9 +36,9 @@ export async function GET(req: Request) {
   if (error) {
     console.error("OAuth callback error:", error.message);
     return NextResponse.redirect(
-      new URL(`/?login_error=${encodeURIComponent(error.message)}`, url.origin)
+      `${baseOrigin}/?login_error=${encodeURIComponent(error.message)}`
     );
   }
 
-  return NextResponse.redirect(new URL(next, url.origin));
+  return NextResponse.redirect(`${baseOrigin}${next}`);
 }
