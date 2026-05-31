@@ -71,7 +71,7 @@ export function BookmarkButton({
       aria-pressed={bookmarked}
       title={bookmarked ? "已加進想去 (點一下移除)" : "加進想去"}
       className={cx(
-        "inline-flex items-center gap-1.5 rounded-xl border px-4 py-3 text-sm font-medium transition",
+        "inline-flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-medium transition sm:px-4 sm:py-2.5",
         bookmarked
           ? "border-amber-300 bg-amber-50 text-amber-700"
           : "border-stone-300 bg-white text-stone-700 hover:bg-stone-50",

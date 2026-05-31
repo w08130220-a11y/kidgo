@@ -101,24 +101,26 @@ export default async function PoiDetailPage({
           </div>
         </div>
 
-        <div className="mt-6 flex gap-2">
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row">
           <Link
             href="/chat"
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white hover:bg-orange-600"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white hover:bg-orange-600 sm:flex-1"
           >
             <Sparkles size={16} /> 加進 AI 行程
           </Link>
-          <BookmarkButton
-            targetType="poi"
-            targetId={poi.id}
-            initialBookmarked={userBookmarked}
-          />
-          <LikeButton
-            targetType="poi"
-            targetId={poi.id}
-            initialLiked={userLiked}
-            initialCount={poi.likes}
-          />
+          <div className="flex gap-2">
+            <BookmarkButton
+              targetType="poi"
+              targetId={poi.id}
+              initialBookmarked={userBookmarked}
+            />
+            <LikeButton
+              targetType="poi"
+              targetId={poi.id}
+              initialLiked={userLiked}
+              initialCount={poi.likes}
+            />
+          </div>
         </div>
 
         <div className="mt-6 rounded-2xl border border-stone-200 bg-white p-5">

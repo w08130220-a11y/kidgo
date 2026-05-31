@@ -135,25 +135,27 @@ export default async function SharedItineraryPage({ params }: { params: Params }
             </span>
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <Link
               href={`/chat?ref=${itinerary.id}`}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-600"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 sm:flex-1"
             >
               <Bookmark size={16} /> 複製成我的
             </Link>
-            <BookmarkButton
-              targetType="itinerary"
-              targetId={itinerary.id}
-              initialBookmarked={userBookmarked}
-            />
-            <LikeButton
-              targetType="itinerary"
-              targetId={itinerary.id}
-              initialLiked={userLiked}
-              initialCount={itinerary.like_count ?? 0}
-            />
-            <ShareButtonClient slug={slug} />
+            <div className="flex flex-wrap gap-2">
+              <BookmarkButton
+                targetType="itinerary"
+                targetId={itinerary.id}
+                initialBookmarked={userBookmarked}
+              />
+              <LikeButton
+                targetType="itinerary"
+                targetId={itinerary.id}
+                initialLiked={userLiked}
+                initialCount={itinerary.like_count ?? 0}
+              />
+              <ShareButtonClient slug={slug} />
+            </div>
           </div>
         </div>
 

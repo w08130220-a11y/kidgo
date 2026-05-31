@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Compass, Sparkles, User, Bookmark, LogOut, Plus, Heart } from "lucide-react";
+import { Compass, Sparkles, User, Plus } from "lucide-react";
 import { createServerClient } from "@/lib/supabase/server";
+import { UserMenu } from "./UserMenu";
 
 export async function Nav() {
   let user: { email?: string; name?: string; avatar?: string } | null = null;
@@ -23,34 +24,38 @@ export async function Nav() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-stone-200/70 bg-stone-50/85 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-3 sm:px-6">
         <Link href="/" className="flex items-center gap-2">
           <span className="text-2xl">🧒</span>
           <span className="text-lg font-bold tracking-tight">
             kidgo
-            <span className="ml-1 hidden text-xs font-normal text-stone-500 sm:inline">
+            <span className="ml-1 hidden text-xs font-normal text-stone-500 md:inline">
               全台親子．30 秒規劃
             </span>
           </span>
         </Link>
         <nav className="flex items-center gap-1 text-sm">
+          {/* Mobile (< sm): 只顯示 icon, 節省空間 */}
           <Link
             href="/poi"
-            className="hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-stone-700 transition hover:bg-stone-200/60 sm:flex"
+            aria-label="探索"
+            className="flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-stone-700 transition hover:bg-stone-200/60"
           >
-            <Compass size={16} /> 探索
+            <Compass size={16} /> <span className="hidden sm:inline">探索</span>
           </Link>
           <Link
             href="/chat"
-            className="hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-stone-700 transition hover:bg-stone-200/60 sm:flex"
+            aria-label="AI 規劃"
+            className="flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-stone-700 transition hover:bg-stone-200/60"
           >
-            <Sparkles size={16} /> AI 規劃
+            <Sparkles size={16} /> <span className="hidden sm:inline">AI 規劃</span>
           </Link>
           <Link
             href="/poi/new"
-            className="hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-stone-700 transition hover:bg-stone-200/60 sm:flex"
+            aria-label="新增景點"
+            className="flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-stone-700 transition hover:bg-stone-200/60"
           >
-            <Plus size={16} /> 新增景點
+            <Plus size={16} /> <span className="hidden sm:inline">新增景點</span>
           </Link>
 
           {user ? (
@@ -58,79 +63,13 @@ export async function Nav() {
           ) : (
             <Link
               href="/login"
-              className="flex items-center gap-1.5 rounded-full bg-stone-900 px-3.5 py-1.5 text-stone-50 transition hover:bg-stone-700"
+              className="flex items-center gap-1.5 rounded-full bg-stone-900 px-3 py-1.5 text-stone-50 transition hover:bg-stone-700"
             >
-              <User size={16} /> 登入
+              <User size={16} /> <span className="hidden sm:inline">登入</span>
             </Link>
           )}
         </nav>
       </div>
     </header>
-  );
-}
-
-function UserMenu({ user }: { user: { email?: string; name?: string; avatar?: string } }) {
-  const initial = (user.name?.[0] ?? user.email?.[0] ?? "?").toUpperCase();
-  return (
-    <div className="group relative">
-      <button className="flex items-center gap-2 rounded-full border border-stone-200 bg-white px-2 py-1 text-sm transition hover:border-stone-300">
-        {user.avatar ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={user.avatar}
-            alt={user.name ?? "user"}
-            className="h-7 w-7 rounded-full object-cover"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-amber-500 text-xs font-bold text-white">
-            {initial}
-          </span>
-        )}
-        <span className="hidden max-w-[100px] truncate text-stone-700 sm:inline">
-          {user.name}
-        </span>
-      </button>
-
-      {/* Dropdown */}
-      <div className="invisible absolute right-0 top-full z-50 mt-1 w-56 rounded-xl border border-stone-200 bg-white p-1 opacity-0 shadow-lg transition group-hover:visible group-hover:opacity-100">
-        <div className="border-b border-stone-100 px-3 py-2 text-xs text-stone-500">
-          <div className="font-medium text-stone-700">{user.name}</div>
-          <div className="truncate">{user.email}</div>
-        </div>
-        <Link
-          href="/me/itineraries"
-          className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-stone-700 hover:bg-stone-100"
-        >
-          <Bookmark size={14} /> 我的行程
-        </Link>
-        <Link
-          href="/me/bookmarks"
-          className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-stone-700 hover:bg-stone-100"
-        >
-          <Bookmark size={14} className="fill-amber-400 text-amber-500" /> 想去清單
-        </Link>
-        <Link
-          href="/me/likes"
-          className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-stone-700 hover:bg-stone-100"
-        >
-          <Heart size={14} /> 我按過讚的
-        </Link>
-        <Link
-          href="/me/uploads"
-          className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-stone-700 hover:bg-stone-100"
-        >
-          <Compass size={14} /> 我上傳的景點
-        </Link>
-        <form action="/auth/signout" method="POST">
-          <button
-            type="submit"
-            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-rose-600 hover:bg-rose-50"
-          >
-            <LogOut size={14} /> 登出
-          </button>
-        </form>
-      </div>
-    </div>
   );
 }
