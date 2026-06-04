@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: { params: Params }) {
     .select("title, days, estimated_cost")
     .eq("share_slug", slug)
     .eq("is_public", true)
-    .single();
+    .maybeSingle();
   if (!data) return { title: "找不到行程 ・ kidgo" };
   return {
     title: `${data.title} ・ kidgo`,
@@ -44,15 +44,24 @@ export default async function SharedItineraryPage({ params }: { params: Params }
   const { slug } = await params;
   const supabase = await createServerClient();
 
-  // 查行程
+  // 查行程 (profiles 分開查, 因為 itineraries.user_id 是 FK 到 auth.users
+  // 不是 profiles, PostgREST 解不出 join)
   const { data: itinerary, error } = await supabase
     .from("itineraries")
-    .select("*, profiles!itineraries_user_id_fkey(display_name, avatar_url)")
+    .select("*")
     .eq("share_slug", slug)
     .eq("is_public", true)
-    .single();
+    .maybeSingle();
 
   if (error || !itinerary) notFound();
+
+  // 另外查作者 profile (用 admin client 繞 RLS, 因為 profile 可能 is_public=false)
+  const admin = (await import("@/lib/supabase/server")).createAdminClient();
+  const { data: authorProfile } = await admin
+    .from("profiles")
+    .select("display_name, avatar_url")
+    .eq("id", itinerary.user_id)
+    .maybeSingle();
 
   // 增加 view_count (fire-and-forget)
   void supabase
@@ -75,7 +84,7 @@ export default async function SharedItineraryPage({ params }: { params: Params }
   const isHalf = days.length === 1 && days[0].poiIds.length <= 3;
   const slotLabels = isHalf ? SLOT_LABELS_HALF : SLOT_LABELS_FULL;
 
-  const author = itinerary.profiles as
+  const author = authorProfile as
     | { display_name?: string; avatar_url?: string }
     | null;
 

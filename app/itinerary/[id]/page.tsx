@@ -42,7 +42,7 @@ export default async function ItineraryDetailPage({
     const { data: it } = await admin
       .from("itineraries")
       .select(
-        "id, user_id, title, days, estimated_cost, is_public, share_slug, like_count, view_count, created_at, profiles!itineraries_user_id_fkey(display_name, avatar_url)"
+        "id, user_id, title, days, estimated_cost, is_public, share_slug, like_count, view_count, created_at"
       )
       .eq("id", id)
       .maybeSingle();
@@ -61,7 +61,6 @@ export default async function ItineraryDetailPage({
       like_count: number;
       view_count: number;
       created_at: string;
-      profiles: { display_name?: string; avatar_url?: string } | null;
     };
     const isOwner = user?.id === itTyped.user_id;
     if (!itTyped.is_public && !isOwner) {
