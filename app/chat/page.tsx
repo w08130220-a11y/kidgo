@@ -233,12 +233,12 @@ export default function ChatPage() {
           <div className="flex items-center gap-3 rounded-full bg-white px-5 py-3 shadow-md">
             <Sparkles className="animate-pulse text-orange-500" size={20} />
             <span className="text-sm font-medium text-stone-700">
-              Claude 思考中...
+              規劃中
             </span>
             <ThinkingDots />
           </div>
           <p className="mt-4 max-w-xs text-xs text-stone-500">
-            從 72 個全台親子場館中挑出最適合你的 3 套行程, 通常 3-8 秒
+            從全台 5,000+ 親子場館中挑出最適合你的方案, 通常 3-8 秒
           </p>
         </main>
       ) : mode === "wizard" ? (

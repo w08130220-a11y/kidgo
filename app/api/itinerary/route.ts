@@ -501,8 +501,8 @@ ${JSON.stringify(candidateJson, null, 1)}
     response = await callClaude([{ role: "user", content: userPrompt }]);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error("Claude API error:", msg);
-    return NextResponse.json({ error: `Claude API error: ${msg}` }, { status: 502 });
+    console.error("AI provider error:", msg);
+    return NextResponse.json({ error: `AI 服務暫時無回應: ${msg}` }, { status: 502 });
   }
 
   let toolBlock = extractToolUse(response);
