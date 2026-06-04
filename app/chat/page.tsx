@@ -1063,6 +1063,7 @@ function ResultsView({
 
       {selected && (
         <PlanDetailStateful
+          key={selected.id}
           plan={selected}
           data={data}
           onLoginRequired={onLoginRequired}
